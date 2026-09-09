@@ -400,7 +400,7 @@ EcoMarket contempla dos vías de devolución, ambas condicionadas a que el pedid
 
 **Árbol de decisión** aplicado por el modelo, en orden: (1) ¿existe el pedido? → (2) ¿su `status` es `Entregado`? (cualquier otro estado corta el flujo con un guion propio, ver tabla de estados en la [Fase 3 · sección 0](#02-estados-contemplados-status)); (3) clasificar el motivo y elegir vía; (4) en garantía, comparar `dias_calendario_desde_entrega` contra 30; (5) en retracto, primero verificar exclusión de categoría y luego comparar `dias_habiles_desde_entrega` contra 5.
 
-> ⚙️ **Decisión de diseño — aritmética de fechas fuera del modelo:** calcular "cuántos días hábiles han pasado desde una fecha" es uno de los errores más comunes de los LLM pequeños (cuentan mal fines de semana, confunden días hábiles con calendario, etc.). Por eso `main_devolucion.py` precalcula ambos valores en Python (función `dias_habiles`) y se los entrega ya resueltos al modelo dentro de `<contexto_temporal>`, con la instrucción explícita de **no** volver a calcularlos. El modelo solo tiene que comparar dos números contra las ventanas de la política — una tarea de razonamiento, no de aritmética.
+> **Decisión — aritmética de fechas fuera del modelo:** calcular "cuántos días hábiles han pasado desde una fecha" es uno de los errores más comunes de los LLM pequeños (cuentan mal fines de semana, confunden días hábiles con calendario, etc.). Por eso `main_devolucion.py` precalcula ambos valores en Python (función `dias_habiles`) y se los entrega ya resueltos al modelo dentro de `<contexto_temporal>`, con la instrucción explícita de **no** volver a calcularlos. El modelo solo tiene que comparar dos números contra las ventanas de la política — una tarea de razonamiento, no de aritmética.
 
 ### 2.2. Prompt final
 
@@ -536,7 +536,7 @@ Cuando "return_eligible" sea false, "return_method" es null y "steps" es una lis
 """
 ```
 
-> 📋 **Nota de diseño — atributos en inglés, contenido en español:** mismo criterio del punto 1 y del [dataset](#03-ejemplo-de-un-registro): los nombres de atributos son técnicos y en inglés; sus valores (`reasoning`, `customer_response`, y los enums `classified_reason`/`return_method`/`rejection_reason`, que son vocabulario de negocio) se mantienen en español.
+> **Nota:** mismo criterio del punto 1 y del [dataset](#03-ejemplo-de-un-registro): los nombres de atributos son técnicos y en inglés; sus valores (`reasoning`, `customer_response`, y los enums `classified_reason`/`return_method`/`rejection_reason`, que son vocabulario de negocio) se mantienen en español.
 
 | Atributo | Tipo | Descripción |
 | :--- | :--- | :--- |
@@ -611,11 +611,11 @@ def construir_mensajes_devolucion(
     ]
 ```
 
-> ⚙️ **Parámetro de inferencia:** igual que en el punto 1, se ejecuta con `temperature = 0.2` y `response_format={"type": "json_object"}` (ver [`src/llm.py`](./src/llm.py)), priorizando que el modelo aplique la política de forma determinista en lugar de "interpretarla" con creatividad.
+>  **Parámetros:** igual que en el punto 1, se ejecuta con `temperature = 0.2` y `response_format={"type": "json_object"}` (ver [`src/llm.py`](./src/llm.py)), priorizando que el modelo aplique la política de forma determinista en lugar de "interpretarla" con creatividad.
 
 ### 2.3. Ejemplos de ejecución
 
-> ℹ️ Este entorno no tiene un servidor de Ollama activo, así que estos casos **no son una llamada en vivo al LLM**. Los datos de entrada (`<contexto_temporal>` y `<datos_pedido>`) sí son reales: se generaron ejecutando las funciones `construir_contexto_temporal` / `db.buscar_pedido` de `main_devolucion.py` contra el [dataset](./data/dataset.json), usando el **8 de septiembre de 2026** como fecha de referencia. La salida JSON es la que produciría el modelo si sigue la política del punto 2.1 al pie de la letra (los campos de decisión —`elegible_devolucion`, `via`, `causa_rechazo`— son 100% determinísticos dado el árbol de decisión; `razonamiento` y `respuesta_cliente` son redacción ilustrativa). Para validarlo contra el modelo real: `python -m src.main_devolucion --tracking <ECO-AAAA-NNNN> --motivo <motivo>`.
+> Este entorno no tiene un servidor de Ollama activo, así que estos casos **no son una llamada en vivo al LLM**. Los datos de entrada (`<contexto_temporal>` y `<datos_pedido>`) sí son reales: se generaron ejecutando las funciones `construir_contexto_temporal` / `db.buscar_pedido` de `main_devolucion.py` contra el [dataset](./data/dataset.json), usando el **8 de septiembre de 2026** como fecha de referencia. La salida JSON es la que produciría el modelo si sigue la política del punto 2.1 al pie de la letra (los campos de decisión —`elegible_devolucion`, `via`, `causa_rechazo`— son 100% determinísticos dado el árbol de decisión; `razonamiento` y `respuesta_cliente` son redacción ilustrativa). Para validarlo contra el modelo real: `python -m src.main_devolucion --tracking <ECO-AAAA-NNNN> --motivo <motivo>`.
 
 Los 4 casos siguientes complementan los 3 del few-shot, ejercitando las ramas que ese few-shot no cubre: retracto aceptado sobre un producto normal, garantía aceptada sobre un producto de higiene, ventana de retracto vencida y pedido aún no entregado.
 
@@ -799,7 +799,7 @@ Contexto recuperado de la base de datos:
 }
 ```
 
-> 💡 Un barrido completo (`python -m src.main_devolucion --todos --motivo <motivo>`) ejecuta la misma lógica contra los 14 pedidos del dataset, cubriendo automáticamente los 8 estados y ambas banderas (`is_perishable`, `is_hygiene_item`) — útil para detectar si el modelo real se desvía de la política en algún caso límite antes de llevarlo a producción.
+> Solicitar devolucion de todos los pedudos (`python -m src.main_devolucion --todos --motivo <motivo>`) ejecuta la misma lógica contra los 14 pedidos del dataset, cubriendo automáticamente los 8 estados y ambas banderas (`is_perishable`, `is_hygiene_item`) — útil para detectar si el modelo real se desvía de la política en algún caso límite antes de llevarlo a producción.
 
 ---
 
@@ -878,8 +878,8 @@ Todas son opcionales: sin un `.env` propio, [`src/llm.py`](./src/llm.py) ya trae
 | `LLM_MODEL` | `llama3.1:8b` | Modelo a invocar. **Debe coincidir con el que descargó `model-loader`** (paso 2). |
 | `LLM_TEMPERATURE` | `0.2` | Baja, para priorizar precisión sobre creatividad (ver [Fase 2](./fase_2_evaluacion.md#1-alucinaciones)). |
 
-> ⚠️ **Ojo con `LLM_MODEL`:** [`docker-compose.yml`](./docker-compose.yml) descarga `qwen2.5:3b` por defecto, mientras que el código de [`src/llm.py`](./src/llm.py) (y `.env.example`) usan `llama3.1:8b` como default de referencia. Si el modelo que pide el script no es el que `model-loader` efectivamente descargó, la llamada falla con un error de "modelo no encontrado". Para evitarlo, define `LLM_MODEL` en un mismo `.env` en la raíz del proyecto: Docker Compose lo usa para sustituir `${LLM_MODEL:-qwen2.5:3b}` al levantar `model-loader`, y `python-dotenv` lo carga automáticamente para los scripts locales — un solo archivo mantiene ambos lados sincronizados. (De hecho, la mención a "Alibaba Cloud" en la salida del punto 1.3 es evidencia de que ese entorno tenía `LLM_MODEL=qwen2.5:3b`, la familia de modelos de Alibaba.)
+> **Nota `LLM_MODEL`:** [`docker-compose.yml`](./docker-compose.yml) descarga `qwen2.5:3b` por defecto, mientras que el código de [`src/llm.py`](./src/llm.py) (y `.env.example`) usan `llama3.1:8b` como default de referencia. Si el modelo que pide el script no es el que `model-loader` efectivamente descargó, la llamada falla con un error de "modelo no encontrado". Para evitarlo, define `LLM_MODEL` en un mismo `.env` en la raíz del proyecto: Docker Compose lo usa para sustituir `${LLM_MODEL:-qwen2.5:3b}` al levantar `model-loader`, y `python-dotenv` lo carga automáticamente para los scripts locales — un solo archivo mantiene ambos lados sincronizados. (De hecho, la mención a "Alibaba Cloud" en la salida del punto 1.3 es evidencia de que ese entorno tenía `LLM_MODEL=qwen2.5:3b`, la familia de modelos de Alibaba.)
 
 ---
 
-📎 Volver al [`README.md`](./README.md)
+Volver al [`README.md`](./README.md)
