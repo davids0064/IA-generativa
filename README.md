@@ -6,10 +6,10 @@ Este repositorio contiene la resolución del Taller Práctico #1 de la asignatur
 
 ---
 
-## 📚 Navegación
+## Navegación
 
 ### Contexto general
-- 📄 [**Contexto del Taller**](./context.md) — Enunciado del caso de estudio y estructura completa del taller.
+- [**Contexto del Taller**](./context.md) — Enunciado del caso de estudio y estructura completa del taller.
 
 ### Soluciones por fase
 | Fase | Descripción | Documento |
@@ -20,7 +20,7 @@ Este repositorio contiene la resolución del Taller Práctico #1 de la asignatur
 
 ---
 
-## 🗂️ Estructura del repositorio
+## Estructura del repositorio
 
 ```
 IA-generativa/
@@ -33,8 +33,24 @@ IA-generativa/
 
 ---
 
-## 👤 Autores
+## Autores
 1. Carlos Cepeda
 2. David Salamanca
 
 Trabajo desarrollado como parte de la **Maestría** — Asignatura *Inteligencia Artificial Generativa*.
+
+## Instalación
+<img width="1070" height="478" alt="image" src="https://github.com/user-attachments/assets/70aa8dc7-273a-4a0a-92e4-10a6865e0e5f" />
+
+## Pruebas de consulta de datos de la base de datos dummy
+<img width="866" height="270" alt="image" src="https://github.com/user-attachments/assets/c891a9e9-93b4-46ab-9d54-ab619c13c2f7" />
+
+## Pruebas del prompt de consulta del estado de un pedido donde se denota la diferencia de un promot basico y otro completo
+<img width="822" height="674" alt="image" src="https://github.com/user-attachments/assets/a62138d3-8503-4dd4-9398-4ba9d44fe22f" />
+
+## Modelo ollama corriendo
+<img width="1461" height="637" alt="image" src="https://github.com/user-attachments/assets/63224e9c-3c1d-418c-a6fd-345da57f3351" />
+
+
+
+
