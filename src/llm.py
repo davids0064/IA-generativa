@@ -14,7 +14,7 @@ load_dotenv()
 
 BASE_URL = os.getenv("LLM_BASE_URL", "http://localhost:11434/v1")
 API_KEY = os.getenv("LLM_API_KEY", "ollama")
-MODELO = os.getenv("LLM_MODEL", "llama3.1:8b")
+MODELO = os.getenv("LLM_MODEL", "qwen2.5:3b")
 TEMPERATURA = float(os.getenv("LLM_TEMPERATURE", "0.2"))
 
 _cliente = OpenAI(base_url=BASE_URL, api_key=API_KEY)

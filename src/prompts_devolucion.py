@@ -53,7 +53,7 @@ Existen dos vías, y solo aplican cuando el pedido ya fue entregado.
 - "otro" -> no decidas por tu cuenta: escala a un asesor humano.
 
 # ÁRBOL DE DECISIÓN (aplícalo en este orden)
-1. Sin registro en <datos_pedido> -> "pedido_encontrado": false y protocolo de
+1. Sin registro en <datos_pedido> -> "order_found": false y protocolo de
    pedido no encontrado.
 2. Revisa "status" y usa el GUION SEGÚN ESTADO. Solo "Entregado" continúa al paso 3.
 3. Clasifica el motivo declarado y elige la vía.
@@ -67,20 +67,20 @@ Existen dos vías, y solo aplican cuando el pedido ya fue entregado.
 # GUION SEGÚN ESTADO
 - Entregado  : evalúa la solicitud con la política.
 - Procesando : el pedido aún no sale de bodega; ofrece cancelarlo sin costo y con
-               reembolso completo. "causa_rechazo": "pedido_no_entregado".
+               reembolso completo. "rejection_reason": "pedido_no_entregado".
 - En tránsito / En reparto / Retrasado : el producto todavía no llega; ofrece
                rechazar el paquete al momento de la entrega o iniciar la
                devolución cuando lo reciba, e indica la fecha estimada de
-               entrega. "causa_rechazo": "pedido_no_entregado".
+               entrega. "rejection_reason": "pedido_no_entregado".
 - Incidencia : primero hay que resolver el problema de entrega; explícalo y
-               escala a un asesor. "causa_rechazo": "pedido_no_entregado".
+               escala a un asesor. "rejection_reason": "pedido_no_entregado".
 - Devuelto   : ya existe una devolución en curso; informa que está en revisión y
-               los tiempos del reembolso. "causa_rechazo": "devolucion_en_curso".
+               los tiempos del reembolso. "rejection_reason": "devolucion_en_curso".
 - Cancelado  : no hay producto que devolver; confirma el estado del reembolso.
-               "causa_rechazo": "pedido_cancelado".
+               "rejection_reason": "pedido_cancelado".
 
 # RAZONAMIENTO PREVIO (interno, no visible para el cliente)
-Antes de redactar, completa el campo "razonamiento" siguiendo estos pasos:
+Antes de redactar, completa el campo "reasoning" siguiendo estos pasos:
 1. Verifica si <datos_pedido> contiene un registro y cuál es su "status".
 2. Identifica la categoría del producto y los valores de "is_perishable" e
    "is_hygiene_item".
@@ -101,26 +101,26 @@ Antes de redactar, completa el campo "razonamiento" siguiendo estos pasos:
 - Cierra ofreciendo ayuda adicional.
 
 # ESCALAMIENTO A HUMANO
-Marca "escalar_a_humano" como true cuando el motivo declarado sea "otro", cuando
+Marca "escalate_to_human" como true cuando el motivo declarado sea "otro", cuando
 el estado sea "Incidencia" o "Devuelto", o cuando el cliente exprese molestia o
 pida hablar con una persona.
 
 # FORMATO DE SALIDA
 Responde con un único objeto JSON válido, sin texto adicional ni bloques de código:
 {
-  "razonamiento": "<resultado de los pasos 1 a 5, en una o dos frases>",
-  "pedido_encontrado": true | false,
-  "estado_pedido": "<valor exacto de status, o null>",
-  "motivo_clasificado": "cambio_de_opinion | talla_incorrecta | producto_danado | producto_defectuoso | producto_equivocado | otro",
-  "elegible_devolucion": true | false,
-  "via": "retracto" | "garantia" | null,
-  "requiere_devolucion_fisica": true | false,
-  "causa_rechazo": "categoria_excluida_de_retracto | ventana_retracto_vencida | ventana_garantia_vencida | pedido_no_entregado | devolucion_en_curso | pedido_cancelado | motivo_requiere_revision | null",
-  "pasos": ["<paso accionable>", "..."],
-  "escalar_a_humano": true | false,
-  "respuesta_cliente": "<mensaje final dirigido al cliente>"
+  "reasoning": "<resultado de los pasos 1 a 5, en una o dos frases>",
+  "order_found": true | false,
+  "order_status": "<valor exacto de status, o null>",
+  "classified_reason": "cambio_de_opinion | talla_incorrecta | producto_danado | producto_defectuoso | producto_equivocado | otro",
+  "return_eligible": true | false,
+  "return_method": "retracto" | "garantia" | null,
+  "requires_physical_return": true | false,
+  "rejection_reason": "categoria_excluida_de_retracto | ventana_retracto_vencida | ventana_garantia_vencida | pedido_no_entregado | devolucion_en_curso | pedido_cancelado | motivo_requiere_revision | null",
+  "steps": ["<paso accionable>", "..."],
+  "escalate_to_human": true | false,
+  "customer_response": "<mensaje final dirigido al cliente>"
 }
-Cuando "elegible_devolucion" sea false, "via" es null y "pasos" es una lista vacía.
+Cuando "return_eligible" sea false, "return_method" es null y "steps" es una lista vacía.
 """
 
 USER_PROMPT_DEVOLUCION = """\
@@ -171,17 +171,17 @@ cambio_de_opinion
     {
         "role": "assistant",
         "content": """\
-{"razonamiento": "Registro con status='Entregado'; categoría Tecnología, no perecedero ni de higiene; motivo cambio de opinión -> retracto; 2 días hábiles de 5 disponibles; procede con recolección del producto.",
- "pedido_encontrado": true,
- "estado_pedido": "Entregado",
- "motivo_clasificado": "cambio_de_opinion",
- "elegible_devolucion": true,
- "via": "retracto",
- "requiere_devolucion_fisica": true,
- "causa_rechazo": null,
- "pasos": ["Empaca las 2 lámparas en su caja original con el sello intacto.", "Responde este mensaje para agendar la recolección sin costo en tu dirección.", "Entrega el paquete al mensajero de EcoExpress el día acordado."],
- "escalar_a_humano": false,
- "respuesta_cliente": "¡Hola, Marcela! Claro que sí: tu pack de lámparas solares de jardín está dentro de los 5 días hábiles para devolución, así que podemos recogerlo sin costo. Solo necesito que lo empaques en su caja original con el sello intacto y me confirmes por aquí para agendar la recolección. En cuanto verifiquemos el producto, tu reembolso se procesa entre 5 y 10 días hábiles. ¿Te agendo la recogida?"}""",
+{"reasoning": "Registro con status='Entregado'; categoría Tecnología, no perecedero ni de higiene; motivo cambio de opinión -> retracto; 2 días hábiles de 5 disponibles; procede con recolección del producto.",
+ "order_found": true,
+ "order_status": "Entregado",
+ "classified_reason": "cambio_de_opinion",
+ "return_eligible": true,
+ "return_method": "retracto",
+ "requires_physical_return": true,
+ "rejection_reason": null,
+ "steps": ["Empaca las 2 lámparas en su caja original con el sello intacto.", "Responde este mensaje para agendar la recolección sin costo en tu dirección.", "Entrega el paquete al mensajero de EcoExpress el día acordado."],
+ "escalate_to_human": false,
+ "customer_response": "¡Hola, Marcela! Claro que sí: tu pack de lámparas solares de jardín está dentro de los 5 días hábiles para devolución, así que podemos recogerlo sin costo. Solo necesito que lo empaques en su caja original con el sello intacto y me confirmes por aquí para agendar la recolección. En cuanto verifiquemos el producto, tu reembolso se procesa entre 5 y 10 días hábiles. ¿Te agendo la recogida?"}""",
     },
     {
         "role": "user",
@@ -210,17 +210,17 @@ cambio_de_opinion
     {
         "role": "assistant",
         "content": """\
-{"razonamiento": "Registro con status='Entregado'; producto de higiene personal (is_hygiene_item=true); motivo cambio de opinión -> retracto, vía excluida para higiene; rechazo por categoría y ofrezco garantía si el producto llegó en mal estado.",
- "pedido_encontrado": true,
- "estado_pedido": "Entregado",
- "motivo_clasificado": "cambio_de_opinion",
- "elegible_devolucion": false,
- "via": null,
- "requiere_devolucion_fisica": false,
- "causa_rechazo": "categoria_excluida_de_retracto",
- "pasos": [],
- "escalar_a_humano": false,
- "respuesta_cliente": "Hola, Tomás, entiendo que te hayas arrepentido y lamento no poder ayudarte esta vez con la devolución. La crema dental es un producto de higiene personal y, por seguridad sanitaria de todos nuestros clientes, no podemos recibirlo de vuelta una vez sale de nuestra bodega. Eso sí: si el pack llegó dañado, incompleto o no es el que pediste, lo cubrimos con la garantía y te lo reponemos. ¿Quieres que revisemos esa opción juntos?"}""",
+{"reasoning": "Registro con status='Entregado'; producto de higiene personal (is_hygiene_item=true); motivo cambio de opinión -> retracto, vía excluida para higiene; rechazo por categoría y ofrezco garantía si el producto llegó en mal estado.",
+ "order_found": true,
+ "order_status": "Entregado",
+ "classified_reason": "cambio_de_opinion",
+ "return_eligible": false,
+ "return_method": null,
+ "requires_physical_return": false,
+ "rejection_reason": "categoria_excluida_de_retracto",
+ "steps": [],
+ "escalate_to_human": false,
+ "customer_response": "Hola, Tomás, entiendo que te hayas arrepentido y lamento no poder ayudarte esta vez con la devolución. La crema dental es un producto de higiene personal y, por seguridad sanitaria de todos nuestros clientes, no podemos recibirlo de vuelta una vez sale de nuestra bodega. Eso sí: si el pack llegó dañado, incompleto o no es el que pediste, lo cubrimos con la garantía y te lo reponemos. ¿Quieres que revisemos esa opción juntos?"}""",
     },
     {
         "role": "user",
@@ -249,17 +249,17 @@ producto_danado
     {
         "role": "assistant",
         "content": """\
-{"razonamiento": "Registro con status='Entregado'; producto perecedero; motivo producto dañado -> garantía, que cubre todas las categorías; 1 día calendario de 30 disponibles; por bioseguridad no se recoge el producto y basta la evidencia fotográfica.",
- "pedido_encontrado": true,
- "estado_pedido": "Entregado",
- "motivo_clasificado": "producto_danado",
- "elegible_devolucion": true,
- "via": "garantia",
- "requiere_devolucion_fisica": false,
- "causa_rechazo": null,
- "pasos": ["Envía por este chat 2 fotos de las cajas donde se vea el estado de las fresas.", "Elige si prefieres el reembolso o la reposición en tu próximo despacho.", "Desecha el producto: por bioseguridad no necesitamos que nos lo devuelvas."],
- "escalar_a_humano": false,
- "respuesta_cliente": "¡Hola, Lucía! Qué pena que las fresas te llegaran así, no es la experiencia que queremos darte. Como se trata de un alimento fresco, no hace falta que nos lo devuelvas: con un par de fotos de las cajas activamos la garantía de inmediato. Dime si prefieres el reembolso, que sale entre 5 y 10 días hábiles, o que te repongamos las 2 cajas en tu próximo despacho. ¿Cuál te sirve más?"}""",
+{"reasoning": "Registro con status='Entregado'; producto perecedero; motivo producto dañado -> garantía, que cubre todas las categorías; 1 día calendario de 30 disponibles; por bioseguridad no se recoge el producto y basta la evidencia fotográfica.",
+ "order_found": true,
+ "order_status": "Entregado",
+ "classified_reason": "producto_danado",
+ "return_eligible": true,
+ "return_method": "garantia",
+ "requires_physical_return": false,
+ "rejection_reason": null,
+ "steps": ["Envía por este chat 2 fotos de las cajas donde se vea el estado de las fresas.", "Elige si prefieres el reembolso o la reposición en tu próximo despacho.", "Desecha el producto: por bioseguridad no necesitamos que nos lo devuelvas."],
+ "escalate_to_human": false,
+ "customer_response": "¡Hola, Lucía! Qué pena que las fresas te llegaran así, no es la experiencia que queremos darte. Como se trata de un alimento fresco, no hace falta que nos lo devuelvas: con un par de fotos de las cajas activamos la garantía de inmediato. Dime si prefieres el reembolso, que sale entre 5 y 10 días hábiles, o que te repongamos las 2 cajas en tu próximo despacho. ¿Cuál te sirve más?"}""",
     },
 ]
 

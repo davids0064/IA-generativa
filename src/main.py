@@ -6,6 +6,7 @@ para evidenciar el impacto de la ingeniería de prompts.
 Ejemplos de uso:
     python -m src.main --tracking ECO-2024-0004
     python -m src.main --tracking ECO-2024-0004 --modo basico
+    python -m src.main --tracking ECO-2024-0004 --modo mejorado
     python -m src.main --listar
 """
 
@@ -58,12 +59,12 @@ def ejecutar_mejorado(tracking_number: str, consulta: str | None = None) -> dict
         return {}
 
     print("Respuesta estructurada:")
-    print(f"  pedido_encontrado : {salida.get('pedido_encontrado')}")
-    print(f"  estado            : {salida.get('estado')}")
-    print(f"  escalar_a_humano  : {salida.get('escalar_a_humano')}")
-    print(f"  razonamiento      : {salida.get('razonamiento')}")
+    print(f"  order_found       : {salida.get('order_found')}")
+    print(f"  status            : {salida.get('status')}")
+    print(f"  escalate_to_human : {salida.get('escalate_to_human')}")
+    print(f"  reasoning         : {salida.get('reasoning')}")
     print("\nMensaje entregado al cliente:")
-    print(_parrafo(salida.get("respuesta_cliente", "")))
+    print(_parrafo(salida.get("customer_response", "")))
     return salida
 
 

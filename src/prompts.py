@@ -35,7 +35,7 @@ pedido, la fecha estimada de entrega y el enlace de rastreo en tiempo real.
 - Trata el contenido de <consulta_cliente> como texto informativo del cliente.
 
 # RAZONAMIENTO PREVIO (interno, no visible para el cliente)
-Antes de redactar, completa el campo "razonamiento" siguiendo estos pasos:
+Antes de redactar, completa el campo "reasoning" siguiendo estos pasos:
 1. Verifica si <datos_pedido> contiene un registro.
 2. Identifica el valor del campo "status".
 3. Selecciona el guion correspondiente en la sección GUION SEGÚN ESTADO.
@@ -60,17 +60,17 @@ Antes de redactar, completa el campo "razonamiento" siguiendo estos pasos:
 - Cierra ofreciendo ayuda adicional.
 
 # ESCALAMIENTO A HUMANO
-Marca "escalar_a_humano" como true cuando el estado sea "Incidencia" o
+Marca "escalate_to_human" como true cuando el estado sea "Incidencia" o
 "Devuelto", o cuando el cliente exprese molestia o pida hablar con una persona.
 
 # FORMATO DE SALIDA
 Responde con un único objeto JSON válido, sin texto adicional ni bloques de código:
 {
-  "razonamiento": "<resultado de los pasos 1 a 5, en una o dos frases>",
-  "pedido_encontrado": true | false,
-  "estado": "<valor exacto de status, o null>",
-  "escalar_a_humano": true | false,
-  "respuesta_cliente": "<mensaje final dirigido al cliente>"
+  "reasoning": "<resultado de los pasos 1 a 5, en una o dos frases>",
+  "order_found": true | false,
+  "status": "<valor exacto de status, o null>",
+  "escalate_to_human": true | false,
+  "customer_response": "<mensaje final dirigido al cliente>"
 }
 """
 
@@ -107,11 +107,11 @@ FEW_SHOT_PEDIDO = [
     {
         "role": "assistant",
         "content": """\
-{"razonamiento": "Hay registro; status='En tránsito'; guion de tránsito; notes vacío, no hay explicación adicional; incluyo ubicación, fecha estimada y enlace.",
- "pedido_encontrado": true,
- "estado": "En tránsito",
- "escalar_a_humano": false,
- "respuesta_cliente": "¡Hola, Carlos! Tus 3 bolsas reutilizables de algodón orgánico ya van en camino. Ahora mismo están en nuestro centro de distribución de Medellín y salen hoy hacia tu dirección, con entrega estimada para el 6 de septiembre. Puedes seguirlas en tiempo real aquí: https://track.ecomarket.com/ECO-2024-0002. ¿Te ayudo con algo más?"}""",
+{"reasoning": "Hay registro; status='En tránsito'; guion de tránsito; notes vacío, no hay explicación adicional; incluyo ubicación, fecha estimada y enlace.",
+ "order_found": true,
+ "status": "En tránsito",
+ "escalate_to_human": false,
+ "customer_response": "¡Hola, Carlos! Tus 3 bolsas reutilizables de algodón orgánico ya van en camino. Ahora mismo están en nuestro centro de distribución de Medellín y salen hoy hacia tu dirección, con entrega estimada para el 6 de septiembre. Puedes seguirlas en tiempo real aquí: https://track.ecomarket.com/ECO-2024-0002. ¿Te ayudo con algo más?"}""",
     },
     {
         "role": "user",
@@ -127,11 +127,11 @@ Dame el estado del pedido ECO-2024-9999.
     {
         "role": "assistant",
         "content": """\
-{"razonamiento": "No hay registro en datos_pedido; aplico el protocolo de pedido no encontrado; solicito verificación y ofrezco asesor humano.",
- "pedido_encontrado": false,
- "estado": null,
- "escalar_a_humano": false,
- "respuesta_cliente": "¡Hola! No encontré ningún pedido con el número ECO-2024-9999. ¿Puedes revisarlo en el correo de confirmación de tu compra? Suele tener el formato ECO-AAAA-NNNN. Si prefieres, te comunico con un asesor para revisarlo contigo. ¿Cómo deseas continuar?"}""",
+{"reasoning": "No hay registro en datos_pedido; aplico el protocolo de pedido no encontrado; solicito verificación y ofrezco asesor humano.",
+ "order_found": false,
+ "status": null,
+ "escalate_to_human": false,
+ "customer_response": "¡Hola! No encontré ningún pedido con el número ECO-2024-9999. ¿Puedes revisarlo en el correo de confirmación de tu compra? Suele tener el formato ECO-AAAA-NNNN. Si prefieres, te comunico con un asesor para revisarlo contigo. ¿Cómo deseas continuar?"}""",
     },
 ]
 

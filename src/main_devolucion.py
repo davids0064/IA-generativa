@@ -137,24 +137,24 @@ def ejecutar(
         return salida
 
     print("Respuesta estructurada:")
-    print(f"  pedido_encontrado          : {salida.get('pedido_encontrado')}")
-    print(f"  estado_pedido              : {salida.get('estado_pedido')}")
-    print(f"  motivo_clasificado         : {salida.get('motivo_clasificado')}")
-    print(f"  elegible_devolucion        : {salida.get('elegible_devolucion')}")
-    print(f"  via                        : {salida.get('via')}")
-    print(f"  requiere_devolucion_fisica : {salida.get('requiere_devolucion_fisica')}")
-    print(f"  causa_rechazo              : {salida.get('causa_rechazo')}")
-    print(f"  escalar_a_humano           : {salida.get('escalar_a_humano')}")
-    print(f"  razonamiento               : {salida.get('razonamiento')}")
+    print(f"  order_found               : {salida.get('order_found')}")
+    print(f"  order_status              : {salida.get('order_status')}")
+    print(f"  classified_reason         : {salida.get('classified_reason')}")
+    print(f"  return_eligible           : {salida.get('return_eligible')}")
+    print(f"  return_method             : {salida.get('return_method')}")
+    print(f"  requires_physical_return  : {salida.get('requires_physical_return')}")
+    print(f"  rejection_reason          : {salida.get('rejection_reason')}")
+    print(f"  escalate_to_human         : {salida.get('escalate_to_human')}")
+    print(f"  reasoning                 : {salida.get('reasoning')}")
 
-    pasos = salida.get("pasos") or []
+    pasos = salida.get("steps") or []
     if pasos:
         print("\nPasos del proceso:")
         for indice, paso in enumerate(pasos, start=1):
             print(f"  {indice}. {paso}")
 
     print("\nMensaje entregado al cliente:")
-    print(_parrafo(salida.get("respuesta_cliente", "")))
+    print(_parrafo(salida.get("customer_response", "")))
     return salida
 
 
@@ -170,12 +170,12 @@ def ejecutar_todos(motivo: str, hoy: date | None = None) -> None:
             continue
         print(f"\n{tracking}  {pedido['status']:<12}  {pedido['product_category']}")
         print(
-            f"  elegible={salida.get('elegible_devolucion')}"
-            f"  via={salida.get('via')}"
-            f"  causa={salida.get('causa_rechazo')}"
-            f"  fisica={salida.get('requiere_devolucion_fisica')}"
+            f"  eligible={salida.get('return_eligible')}"
+            f"  method={salida.get('return_method')}"
+            f"  rejection={salida.get('rejection_reason')}"
+            f"  physical={salida.get('requires_physical_return')}"
         )
-        print(_parrafo(salida.get("respuesta_cliente", "")))
+        print(_parrafo(salida.get("customer_response", "")))
 
 
 def listar_pedidos() -> None:
