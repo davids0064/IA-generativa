@@ -48,5 +48,9 @@ Trabajo desarrollado como parte de la **Maestría** — Asignatura *Inteligencia
 ## Pruebas del prompt de consulta del estado de un pedido donde se denota la diferencia de un promot basico y otro completo
 <img width="822" height="674" alt="image" src="https://github.com/user-attachments/assets/a62138d3-8503-4dd4-9398-4ba9d44fe22f" />
 
+## Modelo ollama corriendo
+<img width="1461" height="637" alt="image" src="https://github.com/user-attachments/assets/63224e9c-3c1d-418c-a6fd-345da57f3351" />
+
+
 
 
