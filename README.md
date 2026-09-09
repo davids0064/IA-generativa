@@ -14,9 +14,9 @@ Este repositorio contiene la resolución del Taller Práctico #1 de la asignatur
 ### Soluciones por fase
 | Fase | Descripción | Documento |
 | :---: | :--- | :--- |
-| **1** | Selección y Justificación del Modelo de IA | 📘 [`fase_1_seleccion_modelo.md`](./fase_1_seleccion_modelo.md) |
-| **2** | Evaluación de Fortalezas, Limitaciones y Riesgos Éticos | 📕 [`fase_2_evaluacion.md`](./fase_2_evaluacion.md) |
-| **3** | Aplicación de la Ingeniería de Prompts | 📗 [`fase_3_prompts.md`](./fase_3_prompts.md) |
+| **1** | Selección y Justificación del Modelo de IA | [`fase_1_seleccion_modelo.md`](./fase_1_seleccion_modelo.md) |
+| **2** | Evaluación de Fortalezas, Limitaciones y Riesgos Éticos | [`fase_2_evaluacion.md`](./fase_2_evaluacion.md) |
+| **3** | Aplicación de la Ingeniería de Prompts | [`fase_3_prompts.md`](./fase_3_prompts.md) |
 
 ---
 
