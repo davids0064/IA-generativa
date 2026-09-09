@@ -1,0 +1,54 @@
+name: ecomarket-ia
+
+services:
+  # Servidor de inferencia con el modelo open-source.
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ecomarket-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+    restart: unless-stopped
+
+  # Servicio de un solo uso: descarga el modelo la primera vez y termina.
+  model-loader:
+    image: ollama/ollama:latest
+    container_name: ecomarket-model-loader
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      LLM_MODEL: ${LLM_MODEL:-qwen2.5:3b}
+    entrypoint: ["/bin/sh", "-c", "ollama pull \"$${LLM_MODEL}\""]
+    restart: "no"
+
+  # Aplicación del taller (CLI de consulta de pedidos).
+  app:
+    build: .
+    image: ecomarket-app
+    container_name: ecomarket-app
+    depends_on:
+      model-loader:
+        condition: service_completed_successfully
+    environment:
+      LLM_BASE_URL: http://ollama:11434/v1
+      LLM_API_KEY: ollama
+      LLM_MODEL: ${LLM_MODEL:-qwen2.5:3b}
+      LLM_TEMPERATURE: ${LLM_TEMPERATURE:-0.2}
+    volumes:
+      # Montados para poder editar prompts y dataset sin reconstruir la imagen.
+      - ./src:/app/src
+      - ./data:/app/data
+    stdin_open: true
+    tty: true
+
+volumes:
+  ollama-models:
