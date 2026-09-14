@@ -2,7 +2,7 @@
 
 > Documento de referencia con el enunciado íntegro del **Taller Práctico #1** y la estructura de las fases que se van a resolver en este repositorio.
 
-📎 Volver al [`README.md`](./README.md)
+Volver al [`README.md`](./README.md)
 
 ---
 
@@ -25,7 +25,7 @@ Actualmente, el tiempo de respuesta promedio es de **24 horas**, lo que está af
 
 El taller se dividirá en **tres fases**, cada una correspondiente a los puntos clave de la descripción proporcionada.
 
-### 🧩 Fase 1 — Selección y Justificación del Modelo de IA
+### Fase 1 — Selección y Justificación del Modelo de IA
 Los estudiantes deberán seleccionar y justificar un modelo de IA generativa para resolver el problema de EcoMarket. **No hay una única respuesta correcta**; lo importante es la justificación.
 
 **Preguntas guía:**
@@ -38,7 +38,7 @@ Los estudiantes deberán seleccionar y justificar un modelo de IA generativa par
 
 ---
 
-### 🧩 Fase 2 — Evaluación de Fortalezas, Limitaciones y Riesgos Éticos
+### Fase 2 — Evaluación de Fortalezas, Limitaciones y Riesgos Éticos
 Aquí el **pensamiento crítico** es fundamental. Los estudiantes no solo deben elegir una solución, sino también evaluar sus implicaciones.
 
 **Puntos a considerar:**
@@ -50,11 +50,11 @@ Aquí el **pensamiento crítico** es fundamental. Los estudiantes no solo deben 
     - **Privacidad de datos:** ¿cómo se maneja información sensible (direcciones, historial de compras) al usarse como contexto o para fine-tuning?
     - **Impacto laboral:** ¿qué pasa con los agentes humanos? ¿El objetivo es reemplazarlos o empoderarlos?
 
-➡️ Solución: [`fase_2_evaluacion.md`](./fase_2_evaluacion.md)
+Solución: [`fase_2_evaluacion.md`](./fase_2_evaluacion.md)
 
 ---
 
-### 🧩 Fase 3 — Aplicación de la Ingeniería de Prompts
+### Fase 3 — Aplicación de la Ingeniería de Prompts
 En esta fase **práctica**, los estudiantes diseñarán prompts para su modelo, para entender la conexión directa entre la instrucción y el resultado.
 
 Se utilizará una estructura similar a la abordada en el tutorial práctico de prompts de la primera sesión. La idea es evidenciar, en código, cómo se construye una cadena de prompts para obtener respuestas óptimas en las interacciones con el chat de atención al cliente.
@@ -68,7 +68,7 @@ Se utilizará una estructura similar a la abordada en el tutorial práctico de p
 2. **Prompt de Devolución de Producto:** Crear un prompt para guiar al cliente en el proceso de devolución.
    - **Desafío:** que el modelo distinga entre productos que **pueden** devolverse y los que **no** (ej: productos perecederos, productos de higiene). La respuesta debe ser clara y empática, incluso si la devolución no es posible.
 
-➡️ Solución: [`fase_3_prompts.md`](./fase_3_prompts.md)
+Solución: [`fase_3_prompts.md`](./fase_3_prompts.md)
 
 ---
 
