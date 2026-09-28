@@ -5,3 +5,6 @@ __pycache__/
 .git/
 .env
 *.md
+data/vectorstore/
+# El manual de políticas es Markdown y forma parte de la base de conocimiento.
+!data/conocimiento/*.md

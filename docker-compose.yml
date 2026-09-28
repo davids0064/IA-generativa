@@ -17,7 +17,8 @@ services:
       start_period: 10s
     restart: unless-stopped
 
-  # Servicio de un solo uso: descarga el modelo la primera vez y termina.
+  # Servicio de un solo uso: descarga el LLM y el modelo de embeddings la
+  # primera vez y termina.
   model-loader:
     image: ollama/ollama:latest
     container_name: ecomarket-model-loader
@@ -27,10 +28,12 @@ services:
     environment:
       OLLAMA_HOST: http://ollama:11434
       LLM_MODEL: ${LLM_MODEL:-qwen2.5:3b}
-    entrypoint: ["/bin/sh", "-c", "ollama pull \"$${LLM_MODEL}\""]
+      EMBEDDINGS_MODEL: ${EMBEDDINGS_MODEL:-bge-m3}
+    entrypoint:
+      ["/bin/sh", "-c", "ollama pull \"$${LLM_MODEL}\" && ollama pull \"$${EMBEDDINGS_MODEL}\""]
     restart: "no"
 
-  # Aplicación del taller (CLI de consulta de pedidos).
+  # Aplicación del taller (CLI del agente: prompts del Taller 1 + RAG del Taller 2).
   app:
     build: .
     image: ecomarket-app
@@ -43,6 +46,10 @@ services:
       LLM_API_KEY: ollama
       LLM_MODEL: ${LLM_MODEL:-qwen2.5:3b}
       LLM_TEMPERATURE: ${LLM_TEMPERATURE:-0.2}
+      EMBEDDINGS_PROVIDER: ollama
+      EMBEDDINGS_MODEL: ${EMBEDDINGS_MODEL:-bge-m3}
+      EMBEDDINGS_BASE_URL: http://ollama:11434
+      VECTORSTORE_DIR: /app/data/vectorstore
     volumes:
       # Montados para poder editar prompts y dataset sin reconstruir la imagen.
       - ./src:/app/src
