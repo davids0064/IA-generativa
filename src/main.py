@@ -1,20 +1,30 @@
-"""Ejercicio 1 de la Fase 3: consulta del estado de un pedido.
+"""Agente de atención al cliente de EcoMarket.
 
-Ejecuta el prompt básico y el mejorado sobre el mismo número de seguimiento
-para evidenciar el impacto de la ingeniería de prompts.
+Taller 1 (Fase 3, ejercicio 1): ejecuta el prompt básico y el mejorado sobre el
+mismo número de seguimiento para evidenciar el impacto de la ingeniería de
+prompts.
+
+Taller 2 (Fase 3): el modo `rag` añade la base de conocimiento (políticas,
+catálogo y FAQ) recuperada con LangChain + ChromaDB, de modo que el agente
+también responde preguntas abiertas que no están en el registro del pedido.
 
 Ejemplos de uso:
     python -m src.main --tracking ECO-2024-0004
     python -m src.main --tracking ECO-2024-0004 --modo basico
     python -m src.main --tracking ECO-2024-0004 --modo mejorado
     python -m src.main --listar
+    python -m src.main --indexar
+    python -m src.main --modo rag --consulta "¿Puedo devolver un jabón que ya abrí?"
+    python -m src.main --modo rag --tracking ECO-2024-0004 --consulta "¿Me devuelven el envío por el retraso?"
 """
 
 import argparse
 import json
 import textwrap
 
-from src import db, llm, prompts
+from langchain_core.exceptions import OutputParserException
+
+from src import base_conocimiento, db, llm, prompts, rag
 
 ANCHO = 78
 
@@ -68,6 +78,48 @@ def ejecutar_mejorado(tracking_number: str, consulta: str | None = None) -> dict
     return salida
 
 
+def ejecutar_rag(consulta: str | None, tracking_number: str | None = None) -> dict:
+    """Recupera pedido + base de conocimiento y responde con la cadena RAG."""
+    if not base_conocimiento.esta_indexada():
+        print("La base de conocimiento está vacía; indexando por primera vez...")
+        indexar()
+    consulta = consulta or f"Dame el estado del pedido {tracking_number}."
+
+    _titulo("AGENTE CON RAG (LangChain + ChromaDB)")
+    print(f"Consulta del cliente:\n  {consulta}")
+
+    try:
+        resultado = rag.responder(consulta, tracking_number)
+    except OutputParserException as error:
+        print("El modelo no devolvió un JSON válido. Salida sin procesar:")
+        print(_parrafo(str(error.llm_output)))
+        return {}
+
+    print(f"\nPedido asociado:\n{resultado['registro_json'] or '  (ninguno)'}")
+    print("\nFragmentos recuperados de la base de conocimiento:")
+    for i, doc in enumerate(resultado["documentos"], start=1):
+        primera_linea = doc.page_content.strip().splitlines()[0][:60]
+        print(f"  [{i}] {rag._etiqueta(doc):<45} {primera_linea}")
+
+    salida = resultado["respuesta"]
+    print("\nRespuesta estructurada:")
+    print(f"  order_found       : {salida.get('order_found')}")
+    print(f"  status            : {salida.get('status')}")
+    print(f"  answer_grounded   : {salida.get('answer_grounded')}")
+    print(f"  sources_used      : {salida.get('sources_used')}")
+    print(f"  escalate_to_human : {salida.get('escalate_to_human')}")
+    print(f"  reasoning         : {salida.get('reasoning')}")
+    print("\nMensaje entregado al cliente:")
+    print(_parrafo(salida.get("customer_response", "")))
+    return salida
+
+
+def indexar() -> None:
+    """Reconstruye el índice vectorial a partir de data/conocimiento."""
+    total = base_conocimiento.indexar()
+    print(f"Base de conocimiento indexada: {total} chunks en {base_conocimiento.VECTORSTORE_DIR}")
+
+
 def listar_pedidos() -> None:
     """Muestra los pedidos disponibles en la base de datos simulada."""
     _titulo("PEDIDOS EN LA BASE DE DATOS")
@@ -80,16 +132,29 @@ def main() -> None:
     parser.add_argument("--tracking", help="Número de seguimiento a consultar")
     parser.add_argument(
         "--modo",
-        choices=("basico", "mejorado", "ambos"),
+        choices=("basico", "mejorado", "ambos", "rag"),
         default="ambos",
-        help="Versión del prompt a ejecutar (por defecto: ambos)",
+        help="Versión del agente a ejecutar (por defecto: ambos = básico + mejorado)",
     )
-    parser.add_argument("--consulta", help="Texto libre del cliente (solo modo mejorado)")
+    parser.add_argument("--consulta", help="Texto libre del cliente (modos mejorado y rag)")
     parser.add_argument("--listar", action="store_true", help="Lista los pedidos disponibles")
+    parser.add_argument(
+        "--indexar", action="store_true", help="Reconstruye la base de conocimiento vectorial"
+    )
     args = parser.parse_args()
 
     if args.listar:
         listar_pedidos()
+        return
+
+    if args.indexar:
+        indexar()
+        return
+
+    if args.modo == "rag":
+        if not (args.tracking or args.consulta):
+            parser.error("el modo rag requiere --consulta, --tracking o ambos")
+        ejecutar_rag(args.consulta, args.tracking)
         return
 
     if not args.tracking:
