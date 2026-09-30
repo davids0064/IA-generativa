@@ -1,6 +1,6 @@
 # Fase 3 — Integración y Ejecución del Código
 
-📎 Navegación: [`README general`](../../README.md) · [`Taller 2`](../README.md) · [`Fase 1`](./fase_1_seleccion_componentes.md) · [`Fase 2`](./fase_2_creacion_base_conocimiento.md) · **Fase 3** · [`Pruebas`](./resultados_pruebas.md)
+Navegación: [`README general`](../../README.md) · [`Taller 2`](../README.md) · [`Fase 1`](./fase_1_seleccion_componentes.md) · [`Fase 2`](./fase_2_creacion_base_conocimiento.md) · **Fase 3** · [`Pruebas`](./resultados_pruebas.md)
 
 ---
 
@@ -107,4 +107,4 @@ Las limitaciones y suposiciones de esta implementación están documentadas en e
 
 ---
 
-📎 Continuar con [`Resultados de las pruebas`](./resultados_pruebas.md)
+Continuar con [`Resultados de las pruebas`](./resultados_pruebas.md)

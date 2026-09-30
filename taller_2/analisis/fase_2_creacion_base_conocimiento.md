@@ -1,6 +1,6 @@
 # Fase 2 — Creación de la Base de Conocimiento
 
-📎 Navegación: [`README general`](../../README.md) · [`Taller 2`](../README.md) · [`Fase 1`](./fase_1_seleccion_componentes.md) · **Fase 2** · [`Fase 3`](./fase_3_integracion_rag.md) · [`Pruebas`](./resultados_pruebas.md)
+Navegación: [`README general`](../../README.md) · [`Taller 2`](../README.md) · [`Fase 1`](./fase_1_seleccion_componentes.md) · **Fase 2** · [`Fase 3`](./fase_3_integracion_rag.md) · [`Pruebas`](./resultados_pruebas.md)
 
 ---
 
@@ -211,4 +211,4 @@ pequeña; el mismo script admite ampliar el conjunto sin cambios.
 
 ---
 
-📎 Continuar con [`Fase 3 — Integración y Ejecución del Código`](./fase_3_integracion_rag.md)
+Continuar con [`Fase 3 — Integración y Ejecución del Código`](./fase_3_integracion_rag.md)
