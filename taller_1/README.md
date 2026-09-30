@@ -111,32 +111,6 @@ Solución: [`fase_3_prompts.md`](./analisis/fase_3_prompts.md)
 
 ---
 
-## 3. Forma de Entrega
-
-Link del repositorio de **GitHub** que contiene la respuesta a las tres fases.
-- Para las **primeras dos fases** (respuestas más textuales), se debe usar formato **Markdown** para presentar la respuesta.
-- Para la **tercera fase**, el repositorio debe contener la **estructura necesaria para ejecutar el código** y obtener respuestas ante los prompts.
-
----
-
-## 4. Rúbrica de Evaluación del Taller (5 Puntos)
-
-### 4.1. Selección y Justificación del Modelo de IA (2 puntos)
-- **2 pts:** Selecciona un modelo adecuado y presenta una justificación completa, considerando arquitectura, costo, escalabilidad y facilidad de integración. Demuestra profundo entendimiento del caso.
-- **1 pt:** Selecciona un modelo pero la justificación es superficial o incompleta. Se limita a un solo factor o no conecta la elección con los requisitos del negocio.
-- **0 pts:** No selecciona un modelo o la justificación es irrelevante e incorrecta.
-
-### 4.2. Evaluación de Fortalezas, Limitaciones y Riesgos Éticos (2 puntos)
-- **2 pts:** Identifica de manera crítica y exhaustiva fortalezas, limitaciones y **especialmente los riesgos éticos**. Muestra pensamiento proactivo sobre sesgos, privacidad de datos e impacto laboral.
-- **1 pt:** Identifica algunas fortalezas y limitaciones, pero el análisis de riesgos éticos es básico o ausente.
-- **0 pts:** No realiza la evaluación crítica o los puntos son incorrectos.
-
-### 4.3. Aplicación de Principios de Ingeniería de Prompts (1 punto)
-- **1 pt:** Crea prompts claros y efectivos. Demuestra buen entendimiento de cómo la estructura, el rol del modelo y el contexto influyen en la calidad de la respuesta.
-- **0 pts:** Prompts inefectivos o ejercicio incompleto.
-
----
-
 ## Puesta en marcha y pruebas
 
 > Guía rápida con capturas de una ejecución real. El paso a paso completo (comandos, variables de entorno, Docker Compose) está en el [punto 3 — Código ejecutable de la Fase 3](./analisis/fase_3_prompts.md#3-código-ejecutable).
