@@ -17,6 +17,7 @@ Volver al [README general](../README.md)
 | **1** | Selección de componentes (embeddings y base vectorial) | [`fase_1_seleccion_componentes.md`](./analisis/fase_1_seleccion_componentes.md) |
 | **2** | Creación de la base de conocimiento (ingesta, chunking, indexación) | [`fase_2_creacion_base_conocimiento.md`](./analisis/fase_2_creacion_base_conocimiento.md) |
 | **3** | Integración y ejecución del código (LangChain + ChromaDB) | [`fase_3_integracion_rag.md`](./analisis/fase_3_integracion_rag.md) |
+| **✔** | **Resultados de las pruebas**: casos, resultado esperado vs. obtenido, capturas y análisis | [`resultados_pruebas.md`](./analisis/resultados_pruebas.md) |
 
 - [Estructura de esta versión](#estructura-de-esta-versión)
 - [Puesta en marcha](#puesta-en-marcha)
@@ -32,7 +33,8 @@ taller_2/
 ├── analisis/                       # Solución documentada de cada fase
 │   ├── fase_1_seleccion_componentes.md
 │   ├── fase_2_creacion_base_conocimiento.md
-│   └── fase_3_integracion_rag.md
+│   ├── fase_3_integracion_rag.md
+│   └── resultados_pruebas.md       # Pruebas de la entrega: esperado vs. obtenido
 ├── data/
 │   ├── dataset.json                # Pedidos (misma base simulada del Taller 1)
 │   ├── conocimiento/               # Base de conocimiento del RAG
@@ -46,6 +48,7 @@ taller_2/
 │   ├── llm.py · db.py              # Cliente del LLM y acceso a pedidos
 │   ├── prompts.py · prompts_devolucion.py
 │   ├── base_conocimiento.py        # Pipeline de indexación
+│   ├── evaluacion_recuperacion.py  # Evaluación del retriever (hit@k, MRR), sin LLM
 │   ├── rag.py                      # Retriever + cadena LangChain
 │   ├── prompts_rag.py              # Prompt del agente con RAG
 │   └── prompts_devolucion_rag.py   # Prompt de devoluciones con la política recuperada
@@ -97,12 +100,21 @@ uv run python -m src.main_devolucion --modo rag --tracking ECO-2024-0008 --motiv
 Si ChromaDB no está arriba o la colección está vacía, los agentes terminan con un
 mensaje que indica el comando para resolverlo; nunca indexan por su cuenta.
 
+Para reproducir la evaluación del retriever con la que se justifican las Fases 1 y 2
+(no requiere la base vectorial ni el LLM, solo Ollama con los modelos de embeddings):
+
+```bash
+uv run python -m src.evaluacion_recuperacion --modelos bge-m3 nomic-embed-text-v2-moe
+```
+
 > **Sin Docker:** con Ollama instalado localmente (`ollama pull qwen2.5:3b && ollama pull bge-m3`)
 > y sin `CHROMA_HOST` en `.env`, ChromaDB funciona en modo embebido: se carga una vez con
 > `uv run python -m src.base_conocimiento` y el índice queda en `data/vectorstore/`.
 
 La salida muestra el pedido asociado, los fragmentos recuperados con su fuente y la
-respuesta estructurada con las citas usadas (`sources_used`). Más comandos y los
+respuesta estructurada con las citas usadas (`sources_used`). Los resultados obtenidos con
+estos mismos comandos están documentados en
+[`resultados_pruebas.md`](./analisis/resultados_pruebas.md). Más comandos y los
 resultados observados están en [`fase_3_integracion_rag.md`](./analisis/fase_3_integracion_rag.md#ejecución).
 
 ---
@@ -118,7 +130,7 @@ APIs de pago. Estas son las diferencias y las razones.
 | Propuesta | Implementado | Razón | Efecto observado |
 | :--- | :--- | :--- | :--- |
 | LLM de gran capacidad (Taller 1, Fase 1) | `qwen2.5:3b` cuantizado a 4 bits, en Ollama | Corre en CPU/GPU integrada con ~2 GB de RAM y sin costo por token. | Recupera bien pero razona peor: a veces mezcla plazos de dos políticas (por ejemplo, cita los 5 días hábiles del retracto al hablar de la garantía) o agrega frases de un fragmento poco relevante. Con un modelo mayor (`llama3.1:8b`, `gpt-4o-mini`) basta con cambiar `LLM_MODEL` y `LLM_BASE_URL` en `.env`. |
-| Pinecone o Weaviate en producción (Fase 1) | ChromaDB en modo servidor (contenedor local) | No requiere cuenta ni costo, y usa la misma interfaz `VectorStore` de LangChain. | Sin búsqueda híbrida (SKU exacto + semántica), sin réplicas ni multi-tenant. Migrar implica cambiar solo `obtener_vectorstore()` en `src/base_conocimiento.py`. |
+| Weaviate autohospedado en producción (Fase 1) | ChromaDB en modo servidor (contenedor local) | No requiere cuenta ni costo, y usa la misma interfaz `VectorStore` de LangChain. | Sin búsqueda híbrida (SKU exacto + semántica), sin réplicas ni multi-tenant. Migrar implica cambiar solo `obtener_vectorstore()` en `src/base_conocimiento.py`. |
 | `bge-m3` servido como API de inferencia | `bge-m3` en el mismo Ollama del LLM | Evita instalar PyTorch (~2 GB) y reutiliza el servidor existente. | Descarga de ~1,2 GB; la indexación de los 42 chunks tarda ~10 s. |
 | Ingesta periódica desde los sistemas de EcoMarket | Carga única con el servicio `indexer` (o `--reindexar` manual) | No hay acceso a sistemas reales. | El stock del catálogo es una foto fija y no se sincroniza. |
 

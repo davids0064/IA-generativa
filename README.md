@@ -58,10 +58,21 @@ reentrenar cuando cambia el catálogo y escala con el volumen a bajo costo.
 
 ### 2.3. Componentes del RAG ([Taller 2, Fases 1 y 2](./taller_2/README.md))
 
-- **Embeddings:** `bge-m3` (open-source, multilingüe, alto en MTEB), con `text-embedding-3-small` como alternativa.
-- **Base vectorial:** ChromaDB para el prototipo; Pinecone o Weaviate para producción por su escalabilidad y filtros por metadatos.
-- **Base de conocimiento:** manual de políticas y garantías, catálogo de productos y FAQ.
-- **Chunking:** recursivo (500 tokens, overlap 50) para textos narrativos; un registro por chunk para datos estructurados.
+- **Embeddings:** `bge-m3` (open-source, multilingüe, contexto de 8K tokens). En una
+  evaluación propia con 20 consultas coloquiales en español recuperó el fragmento
+  correcto en primer lugar en el 80 % de los casos, frente al 65 % de la alternativa
+  evaluada. Se ejecuta en infraestructura propia (privacidad), con `text-embedding-3-small`
+  como alternativa gestionada. [Fase 1](./taller_2/analisis/fase_1_seleccion_componentes.md)
+- **Base vectorial:** ChromaDB en modo servidor para el prototipo (costo cero, filtros por
+  metadatos); Weaviate autohospedado para producción, por su búsqueda híbrida nativa
+  (SKU + semántica), réplicas y control de los datos.
+- **Base de conocimiento:** manual de políticas y garantías, catálogo de productos y FAQ
+  (42 chunks). Los pedidos no se vectorizan: se consultan por búsqueda exacta.
+- **Chunking:** por estructura. El manual se corta por encabezados (cada sección completa
+  en un chunk, con un máximo de 500 tokens y 50 de solapamiento), y catálogo y FAQ van a
+  un registro por chunk. Frente a cortar cada 500 tokens, sube el hit@1 de 55 % a 80 % y
+  reduce 4,7 veces el contexto que recibe el LLM.
+  [Fase 2](./taller_2/analisis/fase_2_creacion_base_conocimiento.md)
 
 ---
 
@@ -93,9 +104,13 @@ consulta ─► db.buscar_pedido ─► prompt ─► LLM      consulta ─► d
 - Base de conocimiento de **42 chunks** (11 de políticas, 18 productos, 13 FAQ) indexada con `bge-m3` en ChromaDB.
 - El agente combina el registro del pedido con los fragmentos recuperados, **cita sus fuentes**
   (`sources_used`) y marca `answer_grounded: false` y escala a un humano cuando no encuentra respaldo.
-- Resultados observados: rechaza devolver un jabón abierto (higiene), confirma el reembolso
-  del envío por un retraso, aplica la garantía de 12 meses del panel solar y no inventa
-  productos que no existen.
+- **Pruebas de la entrega** ([`resultados_pruebas.md`](./taller_2/analisis/resultados_pruebas.md)):
+  2 de 4 casos resueltos correctamente (exclusión de productos de higiene en el agente
+  general y en el de devoluciones). En los otros 2 el agente no inventó información:
+  marcó la respuesta como no fundamentada y escaló a un asesor. Uno falló en la
+  recuperación (la política de retrasos no llegó al contexto) y otro en el razonamiento
+  del modelo de 3B (confundió dos garantías con la regla correcta a la vista). El
+  documento incluye las capturas, el resultado esperado de cada caso y las mejoras propuestas.
 
 ### Limitaciones de la implementación
 

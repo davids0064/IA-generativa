@@ -1,6 +1,6 @@
 # Fase 3 — Integración y Ejecución del Código
 
-📎 Navegación: [`README general`](../../README.md) · [`Taller 2`](../README.md) · [`Fase 1`](./fase_1_seleccion_componentes.md) · [`Fase 2`](./fase_2_creacion_base_conocimiento.md) · **Fase 3**
+📎 Navegación: [`README general`](../../README.md) · [`Taller 2`](../README.md) · [`Fase 1`](./fase_1_seleccion_componentes.md) · [`Fase 2`](./fase_2_creacion_base_conocimiento.md) · **Fase 3** · [`Pruebas`](./resultados_pruebas.md)
 
 ---
 
@@ -34,7 +34,7 @@ de una base de conocimiento vectorial.
 | Pieza | Decisión de la propuesta | Implementación |
 | :--- | :--- | :--- |
 | Modelo de embeddings (Fase 1) | `bge-m3` open-source / `text-embedding-3-small` | `OllamaEmbeddings("bge-m3")`; se cambia a OpenAI con `EMBEDDINGS_PROVIDER=openai` |
-| Base vectorial (Fase 1) | ChromaDB para prototipo; Pinecone/Weaviate en producción | Servidor ChromaDB (`chromadb/chroma:1.5.9`) al que se conecta `langchain_chroma.Chroma` vía `HttpClient`; similitud coseno. Sin `CHROMA_HOST`, modo embebido |
+| Base vectorial (Fase 1) | ChromaDB para prototipo; Weaviate en producción | Servidor ChromaDB (`chromadb/chroma:1.5.9`) al que se conecta `langchain_chroma.Chroma` vía `HttpClient`; similitud coseno. Sin `CHROMA_HOST`, modo embebido |
 | Documentos (Fase 2) | Manual de políticas, catálogo, FAQ | `data/conocimiento/` (Markdown + 2 JSON) |
 | Chunking narrativo (Fase 2) | Recursivo, 500 tokens, overlap 50 | `MarkdownHeaderTextSplitter` + `RecursiveCharacterTextSplitter` |
 | Chunking estructurado (Fase 2) | 1 registro = 1 chunk con metadatos | 18 productos y 13 FAQ, con `sku`, `categoria`, `stock` como metadatos |
@@ -46,6 +46,7 @@ de una base de conocimiento vectorial.
 | Archivo | Rol |
 | :--- | :--- |
 | `src/base_conocimiento.py` | Pipeline de indexación (extracción, chunking, embeddings, upsert), ejecutado una sola vez; conexión compartida a ChromaDB (un cliente por proceso). |
+| `src/evaluacion_recuperacion.py` | Evaluación de la recuperación sin LLM (hit@k, MRR) para comparar modelos de embeddings y estrategias de chunking (Fases 1 y 2). |
 | `src/rag.py` | Retriever y cadenas LCEL que unen pedido + contexto + prompt + LLM (consultas generales y devoluciones). |
 | `src/prompts_rag.py` | Prompt del agente con RAG (reglas de *grounding*, citas y 2 ejemplos few-shot). |
 | `src/prompts_devolucion_rag.py` | Prompt de devoluciones sin la política escrita: conserva el procedimiento (motivo, árbol de decisión, guion por estado) y toma ventanas, exclusiones y plazos de los fragmentos citados. |
@@ -86,6 +87,10 @@ con un mensaje que indica el comando para levantarla o cargarla.
 
 #### Resultados observados (qwen2.5:3b + bge-m3)
 
+Primera ronda de pruebas, durante el desarrollo. La prueba formal de la entrega, con el
+resultado esperado de cada caso, las capturas y el análisis de aciertos y fallos, está en
+[`resultados_pruebas.md`](./resultados_pruebas.md).
+
 | Consulta | Fragmentos recuperados | Resultado |
 | :--- | :--- | :--- |
 | Devolver un jabón abierto por el olor | FAQ higiene, política 4.1 Retracto, FAQ producto abierto, ficha del jabón | Rechaza la devolución por ser de higiene y ofrece la garantía si llegó dañado. |
@@ -102,4 +107,4 @@ Las limitaciones y suposiciones de esta implementación están documentadas en e
 
 ---
 
-Volver al [`README del Taller 2`](../README.md)
+📎 Continuar con [`Resultados de las pruebas`](./resultados_pruebas.md)
