@@ -12,8 +12,17 @@ Implementa el pipeline de indexación definido en
                      `text-embedding-3-small` (OpenAI), según la Fase 1.
   4. Upsert       -> carga de vector, texto y metadatos en ChromaDB.
 
+La carga se hace una sola vez, con este módulo (o el servicio `indexer` de
+Docker Compose). Los agentes (`main.py` y `main_devolucion.py`) solo se
+conectan a la base vectorial: nunca indexan.
+
+ChromaDB corre como servidor (servicio `chroma` de Docker Compose) cuando se
+define `CHROMA_HOST`; sin esa variable se usa en modo embebido, persistido en
+`VECTORSTORE_DIR`.
+
 Ejemplo de uso:
-    python -m src.base_conocimiento            # indexa desde cero
+    python -m src.base_conocimiento                 # carga si la colección está vacía
+    python -m src.base_conocimiento --reindexar     # reconstruye tras cambiar los documentos
     python -m src.base_conocimiento --buscar "¿puedo devolver un jabón?"
 """
 
@@ -21,8 +30,10 @@ import argparse
 import json
 import math
 import os
+from functools import lru_cache
 from pathlib import Path
 
+import chromadb
 from dotenv import load_dotenv
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
@@ -44,6 +55,8 @@ EMBEDDINGS_PROVIDER = os.getenv("EMBEDDINGS_PROVIDER", "ollama")
 EMBEDDINGS_MODEL = os.getenv("EMBEDDINGS_MODEL", "bge-m3")
 EMBEDDINGS_BASE_URL = os.getenv("EMBEDDINGS_BASE_URL", "http://localhost:11434")
 VECTORSTORE_DIR = Path(os.getenv("VECTORSTORE_DIR", RAIZ / "data" / "vectorstore"))
+CHROMA_HOST = os.getenv("CHROMA_HOST")
+CHROMA_PORT = int(os.getenv("CHROMA_PORT", "8000"))
 COLECCION = "ecomarket_conocimiento"
 
 # Parámetros de chunking de la Fase 2, expresados en tokens.
@@ -181,13 +194,28 @@ def obtener_embeddings() -> Embeddings:
     return OllamaEmbeddings(model=EMBEDDINGS_MODEL, base_url=EMBEDDINGS_BASE_URL)
 
 
+def destino() -> str:
+    """Describe dónde vive la base vectorial, para los mensajes al usuario."""
+    return f"http://{CHROMA_HOST}:{CHROMA_PORT}" if CHROMA_HOST else str(VECTORSTORE_DIR)
+
+
+@lru_cache(maxsize=1)
 def obtener_vectorstore() -> Chroma:
-    """Colección persistente de ChromaDB con similitud coseno."""
+    """Conexión a la colección de ChromaDB (similitud coseno), una por proceso.
+
+    Se reutiliza en todas las búsquedas: en un barrido de `main_devolucion`
+    son decenas de consultas y abrir un cliente por cada una es lo que más
+    tiempo consumía fuera del LLM.
+    """
+    if CHROMA_HOST:
+        conexion = {"client": chromadb.HttpClient(host=CHROMA_HOST, port=CHROMA_PORT)}
+    else:
+        conexion = {"persist_directory": str(VECTORSTORE_DIR)}
     return Chroma(
         collection_name=COLECCION,
         embedding_function=obtener_embeddings(),
-        persist_directory=str(VECTORSTORE_DIR),
         collection_metadata={"hnsw:space": "cosine"},
+        **conexion,
     )
 
 
@@ -215,24 +243,56 @@ def esta_indexada() -> bool:
     return bool(obtener_vectorstore().get(limit=1)["ids"])
 
 
+def verificar_indice() -> None:
+    """Termina con un mensaje claro si la base vectorial no responde o está vacía.
+
+    Los agentes la llaman al arrancar en modo `rag`, en lugar de indexar por
+    su cuenta.
+    """
+    try:
+        vacia = not esta_indexada()
+    except Exception as error:  # conexión rechazada, host inexistente, etc.
+        raise SystemExit(
+            f"No se pudo conectar a la base vectorial en {destino()}: {error}\n"
+            "Levanta el servidor con: docker compose up -d chroma"
+        ) from error
+    if vacia:
+        raise SystemExit(
+            f"La base de conocimiento en {destino()} está vacía. Cárgala una sola vez con:\n"
+            "  python -m src.base_conocimiento      (o: docker compose run --rm indexer)"
+        )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument(
+        "--reindexar",
+        action="store_true",
+        help="Borra la colección y vuelve a cargarla (tras cambiar los documentos)",
+    )
     parser.add_argument("--buscar", help="Consulta de prueba contra el índice (sin LLM)")
     parser.add_argument("-k", type=int, default=4, help="Número de chunks a recuperar")
     args = parser.parse_args()
 
     if args.buscar:
+        verificar_indice()
         resultados = obtener_vectorstore().similarity_search_with_score(args.buscar, k=args.k)
         for doc, distancia in resultados:
             print(f"\n[{doc.metadata['fuente']}] distancia={distancia:.3f}  {doc.metadata}")
             print(doc.page_content[:300])
         return
 
+    print(f"Embeddings: {EMBEDDINGS_PROVIDER}/{EMBEDDINGS_MODEL}  ->  {destino()}")
+    if esta_indexada() and not args.reindexar:
+        total = len(obtener_vectorstore().get(include=[])["ids"])
+        print(f"La colección '{COLECCION}' ya tiene {total} chunks; no se vuelve a cargar.")
+        print("Usa --reindexar si cambiaste los documentos de data/conocimiento.")
+        return
+
     chunks = construir_chunks()
     por_fuente: dict[str, int] = {}
     for c in chunks:
         por_fuente[c.metadata["fuente"]] = por_fuente.get(c.metadata["fuente"], 0) + 1
-    print(f"Embeddings: {EMBEDDINGS_PROVIDER}/{EMBEDDINGS_MODEL}  ->  {VECTORSTORE_DIR}")
     print(f"Chunks por fuente: {por_fuente}")
     total = indexar()
     print(f"Indexados {total} chunks en la colección '{COLECCION}'.")

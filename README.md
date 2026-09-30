@@ -99,7 +99,7 @@ consulta ─► db.buscar_pedido ─► prompt ─► LLM      consulta ─► d
 
 ### Limitaciones de la implementación
 
-La implementación se ejecutó en un portátil con `qwen2.5:3b` (4 bits) y ChromaDB local, en
+La implementación se ejecutó en un portátil con `qwen2.5:3b` (4 bits) y un servidor ChromaDB en Docker, en
 lugar del LLM de mayor capacidad y la base vectorial gestionada que se proponen para
 producción. El modelo pequeño recupera bien, pero a veces mezcla plazos de políticas
 distintas. Detalle en

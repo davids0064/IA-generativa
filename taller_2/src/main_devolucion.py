@@ -4,11 +4,18 @@ Runner independiente del ejercicio 1 (`src/main.py`) para poder probar el
 prompt de devoluciones por separado. Reutiliza el mismo cliente de Ollama
 (`src/llm.py`) y la misma base de datos simulada (`src/db.py`).
 
+Taller 2 (Fase 3): el modo `rag` deja de escribir la política en el prompt y
+la recupera del manual indexado en ChromaDB (ver `rag.construir_cadena_devolucion`);
+la respuesta añade las citas usadas (`sources_used`). El índice se carga una
+sola vez con `python -m src.base_conocimiento`; aquí solo se consulta.
+
 Ejemplos de uso:
     python -m src.main_devolucion --tracking ECO-2024-0008
     python -m src.main_devolucion --tracking ECO-2024-0001 --motivo producto_danado
     python -m src.main_devolucion --todos --motivo cambio_de_opinion
     python -m src.main_devolucion --listar
+    python -m src.main_devolucion --modo rag --tracking ECO-2024-0008 --motivo producto_defectuoso
+    python -m src.main_devolucion --modo rag --todos --motivo cambio_de_opinion
 """
 
 import argparse
@@ -16,7 +23,9 @@ import json
 import textwrap
 from datetime import date, timedelta
 
-from src import db, llm, prompts_devolucion
+from langchain_core.exceptions import OutputParserException
+
+from src import base_conocimiento, db, llm, prompts_devolucion, rag
 
 ANCHO = 78
 
@@ -89,13 +98,27 @@ def solicitar_devolucion(
     motivo: str,
     consulta: str | None = None,
     hoy: date | None = None,
+    modo: str = "prompt",
 ) -> dict:
-    """Recupera el pedido (RAG), arma el prompt y devuelve la salida estructurada."""
+    """Recupera el pedido (RAG), arma el prompt y devuelve la salida estructurada.
+
+    En modo `rag` la salida incluye además `_documentos`, los fragmentos de la
+    base de conocimiento que recibió el modelo.
+    """
     hoy = hoy or date.today()
     pedido = db.buscar_pedido(tracking_number)
     registro = db.formatear_para_prompt(pedido, campos=db.CAMPOS_DEVOLUCION)
     contexto_temporal = construir_contexto_temporal(pedido, hoy)
     consulta = consulta or CONSULTAS_POR_MOTIVO[motivo].format(tracking=tracking_number)
+
+    if modo == "rag":
+        try:
+            resultado = rag.responder_devolucion(
+                consulta, motivo, tracking_number, contexto_temporal
+            )
+        except OutputParserException as error:
+            return {"_error": "El modelo no devolvió un JSON válido", "_salida": str(error.llm_output)}
+        return {**resultado["respuesta"], "_documentos": resultado["documentos"]}
 
     mensajes = prompts_devolucion.construir_mensajes_devolucion(
         consulta=consulta,
@@ -116,6 +139,7 @@ def ejecutar(
     motivo: str,
     consulta: str | None = None,
     hoy: date | None = None,
+    modo: str = "prompt",
 ) -> dict:
     """Ejecuta una solicitud e imprime el detalle completo de la interacción."""
     hoy = hoy or date.today()
@@ -124,17 +148,25 @@ def ejecutar(
     contexto_temporal = construir_contexto_temporal(pedido, hoy)
     consulta_final = consulta or CONSULTAS_POR_MOTIVO[motivo].format(tracking=tracking_number)
 
-    _titulo(f"SOLICITUD DE DEVOLUCIÓN — {tracking_number}")
+    sufijo = " (RAG)" if modo == "rag" else ""
+    _titulo(f"SOLICITUD DE DEVOLUCIÓN{sufijo} — {tracking_number}")
     print(f"Consulta del cliente:\n  {consulta_final}")
     print(f"\nMotivo declarado:\n  {motivo}")
     print(f"\nContexto temporal inyectado:\n  {contexto_temporal}")
     print(f"\nContexto recuperado de la base de datos:\n{registro or '  (sin resultados)'}\n")
 
-    salida = solicitar_devolucion(tracking_number, motivo, consulta_final, hoy)
+    salida = solicitar_devolucion(tracking_number, motivo, consulta_final, hoy, modo)
     if "_error" in salida:
         print(f"{salida['_error']}. Salida sin procesar:")
         print(_parrafo(salida["_salida"]))
         return salida
+
+    if modo == "rag":
+        print("Fragmentos recuperados de la base de conocimiento:")
+        for i, doc in enumerate(salida["_documentos"], start=1):
+            primera_linea = doc.page_content.strip().splitlines()[0][:60]
+            print(f"  [{i}] {rag._etiqueta(doc):<45} {primera_linea}")
+        print()
 
     print("Respuesta estructurada:")
     print(f"  order_found               : {salida.get('order_found')}")
@@ -144,6 +176,9 @@ def ejecutar(
     print(f"  return_method             : {salida.get('return_method')}")
     print(f"  requires_physical_return  : {salida.get('requires_physical_return')}")
     print(f"  rejection_reason          : {salida.get('rejection_reason')}")
+    if modo == "rag":
+        print(f"  answer_grounded           : {salida.get('answer_grounded')}")
+        print(f"  sources_used              : {salida.get('sources_used')}")
     print(f"  escalate_to_human         : {salida.get('escalate_to_human')}")
     print(f"  reasoning                 : {salida.get('reasoning')}")
 
@@ -158,13 +193,14 @@ def ejecutar(
     return salida
 
 
-def ejecutar_todos(motivo: str, hoy: date | None = None) -> None:
+def ejecutar_todos(motivo: str, hoy: date | None = None, modo: str = "prompt") -> None:
     """Recorre el dataset completo con el mismo motivo, para revisar los casos límite."""
     hoy = hoy or date.today()
-    _titulo(f"BARRIDO DEL DATASET — motivo: {motivo}")
+    sufijo = " (RAG)" if modo == "rag" else ""
+    _titulo(f"BARRIDO DEL DATASET{sufijo} — motivo: {motivo}")
     for pedido in db.cargar_pedidos():
         tracking = pedido["tracking_number"]
-        salida = solicitar_devolucion(tracking, motivo, hoy=hoy)
+        salida = solicitar_devolucion(tracking, motivo, hoy=hoy, modo=modo)
         if "_error" in salida:
             print(f"\n{tracking}  {pedido['status']:<12}  JSON inválido")
             continue
@@ -175,6 +211,11 @@ def ejecutar_todos(motivo: str, hoy: date | None = None) -> None:
             f"  rejection={salida.get('rejection_reason')}"
             f"  physical={salida.get('requires_physical_return')}"
         )
+        if modo == "rag":
+            print(
+                f"  grounded={salida.get('answer_grounded')}"
+                f"  sources={salida.get('sources_used')}"
+            )
         print(_parrafo(salida.get("customer_response", "")))
 
 
@@ -202,6 +243,13 @@ def main() -> None:
         default="cambio_de_opinion",
         help="Motivo que declara el cliente (por defecto: cambio_de_opinion)",
     )
+    parser.add_argument(
+        "--modo",
+        choices=("prompt", "rag"),
+        default="prompt",
+        help="prompt = política escrita en el prompt (Taller 1); "
+        "rag = política recuperada de la base de conocimiento (Taller 2)",
+    )
     parser.add_argument("--consulta", help="Texto libre del cliente")
     parser.add_argument(
         "--fecha",
@@ -221,14 +269,17 @@ def main() -> None:
         listar_pedidos()
         return
 
-    if args.todos:
-        ejecutar_todos(args.motivo, hoy)
-        return
-
-    if not args.tracking:
+    if not (args.todos or args.tracking):
         parser.error("indica un número de seguimiento con --tracking, o usa --todos / --listar")
 
-    ejecutar(args.tracking, args.motivo, args.consulta, hoy)
+    if args.modo == "rag":
+        base_conocimiento.verificar_indice()
+
+    if args.todos:
+        ejecutar_todos(args.motivo, hoy, args.modo)
+        return
+
+    ejecutar(args.tracking, args.motivo, args.consulta, hoy, args.modo)
 
 
 if __name__ == "__main__":

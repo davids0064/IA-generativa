@@ -13,23 +13,28 @@ de una base de conocimiento vectorial.
 #### Arquitectura implementada
 
 ```
-                    ┌────────────────── Indexación (offline) ──────────────────┐
-data/conocimiento/  │ Extracción ─► Chunking ─► Embeddings bge-m3 ─► ChromaDB   │
- ├ manual_politicas │ (md / pdf)    recursivo    (Ollama)            (upsert)   │
- ├ catalogo (json)  │ (json)        1 registro = 1 chunk                        │
- └ faq (json)       └──────────────────────────────────────────────────────────┘
+ INDEXACIÓN — una sola vez (servicio indexer / python -m src.base_conocimiento)
 
-                    ┌────────────────── Consulta (online) ─────────────────────┐
-consulta cliente ──►│ ¿trae tracking? ─► db.buscar_pedido ─► <datos_pedido>     │
-                    │ retriever top-k + filtro por SKU ─► <contexto_recuperado> │
-                    │ PROMPT_RAG ─► LLM del Taller 1 (qwen2.5 vía Ollama) ─► JSON│
-                    └──────────────────────────────────────────────────────────┘
+ data/conocimiento/ ─► Extracción ─► Chunking ─► Embeddings bge-m3 ─► upsert ─┐
+  (manual md/pdf,       (md, pdf,     (recursivo /   (Ollama)                  │
+   catálogo, FAQ)        json)         1 registro)                             ▼
+                                                              ┌─────────────────────────┐
+                                                              │   Servidor ChromaDB     │
+                                                              │ (volumen chroma-data)   │
+                                                              └─────────────────────────┘
+                                                                           ▲
+ CONSULTA — en cada ejecución (main.py / main_devolucion.py)               │
+                                                                           │
+ consulta ─► ¿tracking? ─► db.buscar_pedido ─► <datos_pedido>              │
+         └─► retriever top-k + filtros por metadatos (sku, sección) ───────┘
+                 ─► <contexto_recuperado>
+         ─► PROMPT_RAG ─► LLM del Taller 1 (qwen2.5 vía Ollama) ─► JSON con citas
 ```
 
 | Pieza | Decisión de la propuesta | Implementación |
 | :--- | :--- | :--- |
 | Modelo de embeddings (Fase 1) | `bge-m3` open-source / `text-embedding-3-small` | `OllamaEmbeddings("bge-m3")`; se cambia a OpenAI con `EMBEDDINGS_PROVIDER=openai` |
-| Base vectorial (Fase 1) | ChromaDB para prototipo; Pinecone/Weaviate en producción | `langchain_chroma.Chroma` persistente, similitud coseno |
+| Base vectorial (Fase 1) | ChromaDB para prototipo; Pinecone/Weaviate en producción | Servidor ChromaDB (`chromadb/chroma:1.5.9`) al que se conecta `langchain_chroma.Chroma` vía `HttpClient`; similitud coseno. Sin `CHROMA_HOST`, modo embebido |
 | Documentos (Fase 2) | Manual de políticas, catálogo, FAQ | `data/conocimiento/` (Markdown + 2 JSON) |
 | Chunking narrativo (Fase 2) | Recursivo, 500 tokens, overlap 50 | `MarkdownHeaderTextSplitter` + `RecursiveCharacterTextSplitter` |
 | Chunking estructurado (Fase 2) | 1 registro = 1 chunk con metadatos | 18 productos y 13 FAQ, con `sku`, `categoria`, `stock` como metadatos |
@@ -40,19 +45,23 @@ consulta cliente ──►│ ¿trae tracking? ─► db.buscar_pedido ─► <d
 
 | Archivo | Rol |
 | :--- | :--- |
-| `src/base_conocimiento.py` | Pipeline de indexación (extracción, chunking, embeddings, upsert). |
-| `src/rag.py` | Retriever y cadena LCEL que une pedido + contexto + prompt + LLM. |
+| `src/base_conocimiento.py` | Pipeline de indexación (extracción, chunking, embeddings, upsert), ejecutado una sola vez; conexión compartida a ChromaDB (un cliente por proceso). |
+| `src/rag.py` | Retriever y cadenas LCEL que unen pedido + contexto + prompt + LLM (consultas generales y devoluciones). |
 | `src/prompts_rag.py` | Prompt del agente con RAG (reglas de *grounding*, citas y 2 ejemplos few-shot). |
-| `src/main.py` | Nuevo modo `--modo rag` y comando `--indexar`; los modos del Taller 1 no cambian. |
+| `src/prompts_devolucion_rag.py` | Prompt de devoluciones sin la política escrita: conserva el procedimiento (motivo, árbol de decisión, guion por estado) y toma ventanas, exclusiones y plazos de los fragmentos citados. |
+| `src/main.py` | Nuevo modo `--modo rag`, que solo consulta la base vectorial; los modos del Taller 1 no cambian. |
+| `src/main_devolucion.py` | Nuevo `--modo rag` (también con `--todos`); `--modo prompt`, el del Taller 1, sigue siendo el predeterminado. |
 | `data/conocimiento/*` | Base de conocimiento de EcoMarket. |
 
 #### Ejecución
 
 ```bash
 pip install -r requirements.txt
-ollama pull qwen2.5:3b && ollama pull bge-m3      # o: docker compose up -d ollama model-loader
+docker compose up -d ollama model-loader chroma    # LLM, embeddings y servidor ChromaDB
 
-python3 -m src.main --indexar                       # 42 chunks: 11 políticas, 18 catálogo, 13 FAQ
+# Carga única de la base de conocimiento (42 chunks: 11 políticas, 18 catálogo, 13 FAQ).
+# Si la colección ya tiene documentos no vuelve a cargarla; --reindexar la reconstruye.
+docker compose run --rm indexer                     # o: python -m src.base_conocimiento
 python -m src.base_conocimiento --buscar "¿puedo devolver un jabón?"   # prueba del retriever, sin LLM
 
 # Preguntas abiertas, sin pedido
@@ -63,12 +72,17 @@ python3 -m src.main --modo rag --consulta "¿Venden bicicletas eléctricas?"
 python3 -m src.main --modo rag --tracking ECO-2024-0004 --consulta "¿Me devuelven el costo del envío por el retraso?"
 python3 -m src.main --modo rag --consulta "Mi pedido ECO-2024-0008 dejó de funcionar a los 3 meses, ¿qué hago?"
 
-# Con Docker
-docker compose run --rm app --indexar
+# Devoluciones con la política recuperada del manual
+python3 -m src.main_devolucion --modo rag --tracking ECO-2024-0008 --motivo producto_defectuoso
+python3 -m src.main_devolucion --modo rag --todos --motivo cambio_de_opinion   # barrido del dataset
+
+# Con Docker (la app depende de indexer, que no recarga si la colección ya existe)
 docker compose run --rm app --modo rag --consulta "¿Cuánto cuesta el envío a Cali?"
+docker compose run --rm --entrypoint python app -m src.main_devolucion --modo rag --tracking ECO-2024-0008
 ```
 
-Si el índice no existe, el modo `rag` lo construye automáticamente la primera vez.
+Los agentes nunca indexan: si ChromaDB no responde o la colección está vacía, terminan
+con un mensaje que indica el comando para levantarla o cargarla.
 
 #### Resultados observados (qwen2.5:3b + bge-m3)
 

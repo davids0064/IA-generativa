@@ -1,5 +1,17 @@
 name: ecomarket-ia
 
+# Variables compartidas por `indexer` y `app` (misma imagen, mismo entorno).
+x-entorno-app: &entorno-app
+  LLM_BASE_URL: http://ollama:11434/v1
+  LLM_API_KEY: ollama
+  LLM_MODEL: ${LLM_MODEL:-qwen2.5:3b}
+  LLM_TEMPERATURE: ${LLM_TEMPERATURE:-0.2}
+  EMBEDDINGS_PROVIDER: ollama
+  EMBEDDINGS_MODEL: ${EMBEDDINGS_MODEL:-bge-m3}
+  EMBEDDINGS_BASE_URL: http://ollama:11434
+  CHROMA_HOST: chroma
+  CHROMA_PORT: "8000"
+
 services:
   # Servidor de inferencia con el modelo open-source.
   ollama:
@@ -33,23 +45,53 @@ services:
       ["/bin/sh", "-c", "ollama pull \"$${LLM_MODEL}\" && ollama pull \"$${EMBEDDINGS_MODEL}\""]
     restart: "no"
 
+  # Base de datos vectorial (ChromaDB en modo servidor). El índice vive en el
+  # volumen `chroma-data`, así que sobrevive a reinicios y se carga una sola vez.
+  chroma:
+    image: chromadb/chroma:1.5.9
+    container_name: ecomarket-chroma
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma-data:/data
+    healthcheck:
+      test: ["CMD", "bash", "-c", ":> /dev/tcp/127.0.0.1/8000"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 5s
+    restart: unless-stopped
+
+  # Servicio de un solo uso: carga la base de conocimiento en ChromaDB y
+  # termina. Si la colección ya tiene documentos no hace nada; para
+  # reconstruirla: docker compose run --rm indexer --reindexar
+  indexer:
+    build: .
+    image: ecomarket-app
+    container_name: ecomarket-indexer
+    depends_on:
+      model-loader:
+        condition: service_completed_successfully
+      chroma:
+        condition: service_healthy
+    environment: *entorno-app
+    entrypoint: ["python", "-m", "src.base_conocimiento"]
+    command: []
+    volumes:
+      - ./src:/app/src
+      - ./data:/app/data
+    restart: "no"
+
   # Aplicación del taller (CLI del agente: prompts del Taller 1 + RAG del Taller 2).
+  # Solo consulta la base vectorial: la carga es responsabilidad de `indexer`.
   app:
     build: .
     image: ecomarket-app
     container_name: ecomarket-app
     depends_on:
-      model-loader:
+      indexer:
         condition: service_completed_successfully
-    environment:
-      LLM_BASE_URL: http://ollama:11434/v1
-      LLM_API_KEY: ollama
-      LLM_MODEL: ${LLM_MODEL:-qwen2.5:3b}
-      LLM_TEMPERATURE: ${LLM_TEMPERATURE:-0.2}
-      EMBEDDINGS_PROVIDER: ollama
-      EMBEDDINGS_MODEL: ${EMBEDDINGS_MODEL:-bge-m3}
-      EMBEDDINGS_BASE_URL: http://ollama:11434
-      VECTORSTORE_DIR: /app/data/vectorstore
+    environment: *entorno-app
     volumes:
       # Montados para poder editar prompts y dataset sin reconstruir la imagen.
       - ./src:/app/src
@@ -59,3 +101,4 @@ services:
 
 volumes:
   ollama-models:
+  chroma-data:

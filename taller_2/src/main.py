@@ -7,13 +7,14 @@ prompts.
 Taller 2 (Fase 3): el modo `rag` añade la base de conocimiento (políticas,
 catálogo y FAQ) recuperada con LangChain + ChromaDB, de modo que el agente
 también responde preguntas abiertas que no están en el registro del pedido.
+El índice se carga una sola vez con `python -m src.base_conocimiento`; aquí
+solo se consulta.
 
 Ejemplos de uso:
     python -m src.main --tracking ECO-2024-0004
     python -m src.main --tracking ECO-2024-0004 --modo basico
     python -m src.main --tracking ECO-2024-0004 --modo mejorado
     python -m src.main --listar
-    python -m src.main --indexar
     python -m src.main --modo rag --consulta "¿Puedo devolver un jabón que ya abrí?"
     python -m src.main --modo rag --tracking ECO-2024-0004 --consulta "¿Me devuelven el envío por el retraso?"
 """
@@ -80,9 +81,6 @@ def ejecutar_mejorado(tracking_number: str, consulta: str | None = None) -> dict
 
 def ejecutar_rag(consulta: str | None, tracking_number: str | None = None) -> dict:
     """Recupera pedido + base de conocimiento y responde con la cadena RAG."""
-    if not base_conocimiento.esta_indexada():
-        print("La base de conocimiento está vacía; indexando por primera vez...")
-        indexar()
     consulta = consulta or f"Dame el estado del pedido {tracking_number}."
 
     _titulo("AGENTE CON RAG (LangChain + ChromaDB)")
@@ -114,12 +112,6 @@ def ejecutar_rag(consulta: str | None, tracking_number: str | None = None) -> di
     return salida
 
 
-def indexar() -> None:
-    """Reconstruye el índice vectorial a partir de data/conocimiento."""
-    total = base_conocimiento.indexar()
-    print(f"Base de conocimiento indexada: {total} chunks en {base_conocimiento.VECTORSTORE_DIR}")
-
-
 def listar_pedidos() -> None:
     """Muestra los pedidos disponibles en la base de datos simulada."""
     _titulo("PEDIDOS EN LA BASE DE DATOS")
@@ -138,22 +130,16 @@ def main() -> None:
     )
     parser.add_argument("--consulta", help="Texto libre del cliente (modos mejorado y rag)")
     parser.add_argument("--listar", action="store_true", help="Lista los pedidos disponibles")
-    parser.add_argument(
-        "--indexar", action="store_true", help="Reconstruye la base de conocimiento vectorial"
-    )
     args = parser.parse_args()
 
     if args.listar:
         listar_pedidos()
         return
 
-    if args.indexar:
-        indexar()
-        return
-
     if args.modo == "rag":
         if not (args.tracking or args.consulta):
             parser.error("el modo rag requiere --consulta, --tracking o ambos")
+        base_conocimiento.verificar_indice()
         ejecutar_rag(args.consulta, args.tracking)
         return
 

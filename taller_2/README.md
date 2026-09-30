@@ -39,15 +39,16 @@ taller_2/
 │   │   ├── manual_politicas_garantias.md
 │   │   ├── catalogo_productos.json
 │   │   └── faq.json
-│   └── vectorstore/                # Índice de ChromaDB (generado, no versionado)
+│   └── vectorstore/                # Índice en modo embebido, sin servidor (no versionado)
 ├── src/
 │   ├── main.py                     # Agente: modos basico/mejorado (Taller 1) + modo rag
-│   ├── main_devolucion.py          # Agente de devoluciones (heredado del Taller 1)
+│   ├── main_devolucion.py          # Agente de devoluciones: modo prompt (Taller 1) + modo rag
 │   ├── llm.py · db.py              # Cliente del LLM y acceso a pedidos
 │   ├── prompts.py · prompts_devolucion.py
 │   ├── base_conocimiento.py        # Pipeline de indexación
 │   ├── rag.py                      # Retriever + cadena LangChain
-│   └── prompts_rag.py              # Prompt del agente con RAG
+│   ├── prompts_rag.py              # Prompt del agente con RAG
+│   └── prompts_devolucion_rag.py   # Prompt de devoluciones con la política recuperada
 ├── requirements.txt · .env.example
 └── Dockerfile · docker-compose.yml
 ```
@@ -58,13 +59,44 @@ Todos los comandos de este documento se ejecutan **desde la carpeta `taller_2/`*
 
 ## Puesta en marcha
 
+La base de conocimiento se carga **una sola vez** en un servidor de ChromaDB; los
+agentes (`main.py` y `main_devolucion.py`) solo se conectan a él para consultar.
+
+**1. Levantar la infraestructura y cargar la base vectorial (una sola vez)**
+
+```bash
+cp .env.example .env                            # CHROMA_HOST=localhost, modelos, etc.
+docker compose up -d ollama model-loader chroma # LLM + embeddings + ChromaDB (puerto 8000)
+docker compose run --rm indexer                 # carga los 42 chunks en ChromaDB
+```
+
+| Servicio | Rol |
+| :--- | :--- |
+| `ollama` | Sirve el LLM (`qwen2.5:3b`) y el modelo de embeddings (`bge-m3`). |
+| `model-loader` | Descarga ambos modelos la primera vez y termina. |
+| `chroma` | Servidor de ChromaDB; el índice persiste en el volumen `chroma-data`. |
+| `indexer` | Carga la base de conocimiento y termina. Si la colección ya tiene documentos no hace nada. |
+
+Si cambian los documentos de `data/conocimiento/` **o el modelo de embeddings**
+(`EMBEDDINGS_MODEL`), se reconstruye con `docker compose run --rm indexer --reindexar`
+(o `python -m src.base_conocimiento --reindexar`): vectores de modelos distintos no son
+comparables entre sí.
+
+**2. Ejecutar los agentes (tantas veces como se quiera, sin recargar)**
+
 ```bash
 pip install -r requirements.txt
-docker compose up -d ollama model-loader    # descarga qwen2.5:3b y bge-m3 (o: ollama pull bge-m3)
-python -m src.main --indexar                # construye el índice en data/vectorstore
 python -m src.main --modo rag --consulta "¿Puedo devolver un jabón que ya abrí?"
 python -m src.main --modo rag --tracking ECO-2024-0004 --consulta "¿Me devuelven el envío por el retraso?"
+python -m src.main_devolucion --modo rag --tracking ECO-2024-0008 --motivo producto_defectuoso
 ```
+
+Si ChromaDB no está arriba o la colección está vacía, los agentes terminan con un
+mensaje que indica el comando para resolverlo; nunca indexan por su cuenta.
+
+> **Sin Docker:** con Ollama instalado localmente (`ollama pull qwen2.5:3b && ollama pull bge-m3`)
+> y sin `CHROMA_HOST` en `.env`, ChromaDB funciona en modo embebido: se carga una vez con
+> `python -m src.base_conocimiento` y el índice queda en `data/vectorstore/`.
 
 La salida muestra el pedido asociado, los fragmentos recuperados con su fuente y la
 respuesta estructurada con las citas usadas (`sources_used`). Más comandos y los
@@ -83,9 +115,9 @@ APIs de pago. Estas son las diferencias y las razones.
 | Propuesta | Implementado | Razón | Efecto observado |
 | :--- | :--- | :--- | :--- |
 | LLM de gran capacidad (Taller 1, Fase 1) | `qwen2.5:3b` cuantizado a 4 bits, en Ollama | Corre en CPU/GPU integrada con ~2 GB de RAM y sin costo por token. | Recupera bien pero razona peor: a veces mezcla plazos de dos políticas (por ejemplo, cita los 5 días hábiles del retracto al hablar de la garantía) o agrega frases de un fragmento poco relevante. Con un modelo mayor (`llama3.1:8b`, `gpt-4o-mini`) basta con cambiar `LLM_MODEL` y `LLM_BASE_URL` en `.env`. |
-| Pinecone o Weaviate en producción (Fase 1) | ChromaDB local y persistente | No requiere cuenta, servidor ni costo, y usa la misma interfaz `VectorStore` de LangChain. | Sin búsqueda híbrida (SKU exacto + semántica), sin réplicas ni multi-tenant. Migrar implica cambiar solo `obtener_vectorstore()` en `src/base_conocimiento.py`. |
+| Pinecone o Weaviate en producción (Fase 1) | ChromaDB en modo servidor (contenedor local) | No requiere cuenta ni costo, y usa la misma interfaz `VectorStore` de LangChain. | Sin búsqueda híbrida (SKU exacto + semántica), sin réplicas ni multi-tenant. Migrar implica cambiar solo `obtener_vectorstore()` en `src/base_conocimiento.py`. |
 | `bge-m3` servido como API de inferencia | `bge-m3` en el mismo Ollama del LLM | Evita instalar PyTorch (~2 GB) y reutiliza el servidor existente. | Descarga de ~1,2 GB; la indexación de los 42 chunks tarda ~10 s. |
-| Ingesta periódica desde los sistemas de EcoMarket | Indexación manual con `--indexar` | No hay acceso a sistemas reales. | El stock del catálogo es una foto fija y no se sincroniza. |
+| Ingesta periódica desde los sistemas de EcoMarket | Carga única con el servicio `indexer` (o `--reindexar` manual) | No hay acceso a sistemas reales. | El stock del catálogo es una foto fija y no se sincroniza. |
 
 ### Suposiciones
 
@@ -110,8 +142,12 @@ APIs de pago. Estas son las diferencias y las razones.
    recupera con un filtro por `sku`. Sin esto, preguntas como "dejó de funcionar" no
    recuperan la política específica de la categoría.
 6. **Alcance.** El RAG se integró en el agente de `src/main.py`, como pide el
-   enunciado. El agente de devoluciones (`src/main_devolucion.py`) conserva la política
-   dentro del prompt, y los modos `basico` y `mejorado` del Taller 1 no cambian.
+   enunciado, y en el agente de devoluciones (`src/main_devolucion.py --modo rag`).
+   En este último las secciones del manual que deciden el caso (retracto, garantía,
+   reembolsos y, para tecnología, la garantía del fabricante) se recuperan con un
+   filtro por metadatos, no por similitud, para que nunca queden fuera del contexto.
+   Los modos del Taller 1 (`basico`, `mejorado` y `--modo prompt` de devoluciones,
+   con la política escrita en el prompt) no cambian.
 7. **Sin re-ranking, memoria ni evaluación automática.** Se recuperan los 4 chunks más
    similares (`RAG_TOP_K`) sin re-ranker, cada consulta es independiente (sin historial
    de conversación) y la calidad se validó a mano con los casos de
