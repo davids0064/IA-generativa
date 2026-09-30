@@ -1,6 +1,6 @@
 # Fase 1 — Selección y Justificación del Modelo de IA
 
-📎 Navegación: [`README.md`](./README.md) · [`context.md`](./context.md) · **Fase 1** · [`Fase 2`](./fase_2_evaluacion.md) · [`Fase 3`](./fase_3_prompts.md)
+📎 Navegación: [`README general`](../../README.md) · [`Taller 1`](../README.md) · **Fase 1** · [`Fase 2`](./fase_2_evaluacion.md) · [`Fase 3`](./fase_3_prompts.md)
 
 ---
 

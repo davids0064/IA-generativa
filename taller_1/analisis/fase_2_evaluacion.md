@@ -1,6 +1,6 @@
 # Fase 2 — Evaluación de Fortalezas, Limitaciones y Riesgos Éticos
 
-📎 Navegación: [`README.md`](./README.md) · [`context.md`](./context.md) · [`Fase 1`](./fase_1_seleccion_modelo.md) · **Fase 2** · [`Fase 3`](./fase_3_prompts.md)
+📎 Navegación: [`README general`](../../README.md) · [`Taller 1`](../README.md) · [`Fase 1`](./fase_1_seleccion_modelo.md) · **Fase 2** · [`Fase 3`](./fase_3_prompts.md)
 
 ---
 

@@ -1,6 +1,6 @@
 # Fase 3 — Aplicación de la Ingeniería de Prompts
 
-📎 Navegación: [`README.md`](./README.md) · [`context.md`](./context.md) · [`Fase 1`](./fase_1_seleccion_modelo.md) · [`Fase 2`](./fase_2_evaluacion.md) · **Fase 3**
+📎 Navegación: [`README general`](../../README.md) · [`Taller 1`](../README.md) · [`Fase 1`](./fase_1_seleccion_modelo.md) · [`Fase 2`](./fase_2_evaluacion.md) · **Fase 3**
 
 ---
 
@@ -15,7 +15,7 @@
 
 ## 0. Base de datos
 
-Archivo: [`data/dataset.json`](./data/dataset.json) — **12 pedidos** (el taller exige mínimo 10).
+Archivo: [`data/dataset.json`](../data/dataset.json) — **12 pedidos** (el taller exige mínimo 10).
 
 Esta base de datos es **transversal a los dos ejercicios** de esta fase: alimenta tanto el **prompt de solicitud de pedido** (punto 1), que necesita el estado logístico y la fecha de entrega, como el **prompt de devolución** (punto 2), que necesita el producto comprado y la fecha del pedido para evaluar si aplica la política de devoluciones.
 
@@ -372,11 +372,11 @@ algo más?
 
 **Objetivo:** guiar al cliente en el proceso de devolución de un producto, resolviendo el reto planteado en el taller: que el modelo distinga entre los productos que **sí pueden** devolverse y los que **no** (perecederos, higiene personal, suscripciones), comunicando el resultado —favorable o no— con un tono claro y empático.
 
-A diferencia del punto 1, aquí no se compara una versión básica contra una mejorada: aplicar una política de negocio con excepciones no puede resolverse con una instrucción de una sola frase, así que se diseña directamente el prompt de producción, en [`src/prompts_devolucion.py`](./src/prompts_devolucion.py).
+A diferencia del punto 1, aquí no se compara una versión básica contra una mejorada: aplicar una política de negocio con excepciones no puede resolverse con una instrucción de una sola frase, así que se diseña directamente el prompt de producción, en [`src/prompts_devolucion.py`](../src/prompts_devolucion.py).
 
 Este ejercicio reutiliza la misma [base de datos](#0-base-de-datos) del punto 1, pero difiere en dos aspectos:
 
-- **Campos distintos:** en vez de los campos logísticos (`CAMPOS_PEDIDO`), se inyecta el subconjunto comercial necesario para decidir elegibilidad (`CAMPOS_DEVOLUCION` en [`src/db.py`](./src/db.py)): `product_category`, `is_perishable`, `is_hygiene_item` y `delivered_date`. El resto de campos logísticos (`current_location`, `carrier`, `tracking_url`) se omiten a propósito: son irrelevantes para esta decisión y solo añadirían ruido al contexto.
+- **Campos distintos:** en vez de los campos logísticos (`CAMPOS_PEDIDO`), se inyecta el subconjunto comercial necesario para decidir elegibilidad (`CAMPOS_DEVOLUCION` en [`src/db.py`](../src/db.py)): `product_category`, `is_perishable`, `is_hygiene_item` y `delivered_date`. El resto de campos logísticos (`current_location`, `carrier`, `tracking_url`) se omiten a propósito: son irrelevantes para esta decisión y solo añadirían ruido al contexto.
 - **Un dato calculado fuera del modelo:** los días transcurridos desde la entrega (ver 2.1).
 
 ### 2.1. Reglas de negocio para devoluciones
@@ -578,7 +578,7 @@ USER_PROMPT_DEVOLUCION = """\
 
 #### Ejemplos few-shot
 
-`FEW_SHOT_DEVOLUCION` fija el comportamiento con **3 casos de referencia** que cubren los tres desenlaces posibles del árbol de decisión (código completo en [`src/prompts_devolucion.py`](./src/prompts_devolucion.py#L146-L264)):
+`FEW_SHOT_DEVOLUCION` fija el comportamiento con **3 casos de referencia** que cubren los tres desenlaces posibles del árbol de decisión (código completo en [`src/prompts_devolucion.py`](../src/prompts_devolucion.py#L146-L264)):
 
 | # | Motivo declarado | Producto | Resultado |
 | :---: | :--- | :--- | :--- |
@@ -611,11 +611,11 @@ def construir_mensajes_devolucion(
     ]
 ```
 
->  **Parámetros:** igual que en el punto 1, se ejecuta con `temperature = 0.2` y `response_format={"type": "json_object"}` (ver [`src/llm.py`](./src/llm.py)), priorizando que el modelo aplique la política de forma determinista en lugar de "interpretarla" con creatividad.
+>  **Parámetros:** igual que en el punto 1, se ejecuta con `temperature = 0.2` y `response_format={"type": "json_object"}` (ver [`src/llm.py`](../src/llm.py)), priorizando que el modelo aplique la política de forma determinista en lugar de "interpretarla" con creatividad.
 
 ### 2.3. Ejemplos de ejecución
 
-> Este entorno no tiene un servidor de Ollama activo, así que estos casos **no son una llamada en vivo al LLM**. Los datos de entrada (`<contexto_temporal>` y `<datos_pedido>`) sí son reales: se generaron ejecutando las funciones `construir_contexto_temporal` / `db.buscar_pedido` de `main_devolucion.py` contra el [dataset](./data/dataset.json), usando el **8 de septiembre de 2026** como fecha de referencia. La salida JSON es la que produciría el modelo si sigue la política del punto 2.1 al pie de la letra (los campos de decisión —`elegible_devolucion`, `via`, `causa_rechazo`— son 100% determinísticos dado el árbol de decisión; `razonamiento` y `respuesta_cliente` son redacción ilustrativa). Para validarlo contra el modelo real: `python -m src.main_devolucion --tracking <ECO-AAAA-NNNN> --motivo <motivo>`.
+> Este entorno no tiene un servidor de Ollama activo, así que estos casos **no son una llamada en vivo al LLM**. Los datos de entrada (`<contexto_temporal>` y `<datos_pedido>`) sí son reales: se generaron ejecutando las funciones `construir_contexto_temporal` / `db.buscar_pedido` de `main_devolucion.py` contra el [dataset](../data/dataset.json), usando el **8 de septiembre de 2026** como fecha de referencia. La salida JSON es la que produciría el modelo si sigue la política del punto 2.1 al pie de la letra (los campos de decisión —`elegible_devolucion`, `via`, `causa_rechazo`— son 100% determinísticos dado el árbol de decisión; `razonamiento` y `respuesta_cliente` son redacción ilustrativa). Para validarlo contra el modelo real: `python -m src.main_devolucion --tracking <ECO-AAAA-NNNN> --motivo <motivo>`.
 
 Los 4 casos siguientes complementan los 3 del few-shot, ejercitando las ramas que ese few-shot no cubre: retracto aceptado sobre un producto normal, garantía aceptada sobre un producto de higiene, ventana de retracto vencida y pedido aún no entregado.
 
@@ -805,7 +805,7 @@ Contexto recuperado de la base de datos:
 
 ## 3. Código ejecutable
 
-Requisitos: Python 3.12+ y Docker (con Docker Compose). El modelo se sirve en local vía [Ollama](https://ollama.com/), sin necesidad de una API de pago — ver la nota sobre modelo open-source en la [sección 3 del `context.md`](./context.md#3-forma-de-entrega).
+Requisitos: Python 3.12+ y Docker (con Docker Compose). El modelo se sirve en local vía [Ollama](https://ollama.com/), sin necesidad de una API de pago — ver la nota sobre modelo open-source en la [sección 3 del enunciado](../README.md#3-forma-de-entrega).
 
 ### 3.1. Preparar el entorno
 
@@ -815,7 +815,7 @@ Requisitos: Python 3.12+ y Docker (con Docker Compose). El modelo se sirve en lo
 pip install -r requirements.txt
 ```
 
-Instala `openai>=1.40.0` (cliente HTTP compatible con OpenAI, que es la interfaz que expone Ollama — ver [`src/llm.py`](./src/llm.py)) y `python-dotenv>=1.0.0` (carga de variables desde `.env`).
+Instala `openai>=1.40.0` (cliente HTTP compatible con OpenAI, que es la interfaz que expone Ollama — ver [`src/llm.py`](../src/llm.py)) y `python-dotenv>=1.0.0` (carga de variables desde `.env`).
 
 **2. Levantar Ollama con el modelo descargado, vía Docker Compose**
 
@@ -823,11 +823,11 @@ Instala `openai>=1.40.0` (cliente HTTP compatible con OpenAI, que es la interfaz
 docker compose up -d ollama model-loader
 ```
 
-Esto trae dos de los tres servicios definidos en [`docker-compose.yml`](./docker-compose.yml):
+Esto trae dos de los tres servicios definidos en [`docker-compose.yml`](../docker-compose.yml):
 - `ollama`: servidor de inferencia, expuesto en `localhost:11434`.
 - `model-loader`: servicio de un solo uso que espera a que `ollama` esté *healthy* y ejecuta `ollama pull` sobre `LLM_MODEL` (por defecto `qwen2.5:3b`), y termina al finalizar la descarga.
 
-> El tercer servicio, `app`, empaqueta el propio proyecto para correrlo **dentro** de Docker (ver [`Dockerfile`](./Dockerfile)); no se usa en este flujo porque el punto 1 ya instaló las dependencias localmente con `pip`.
+> El tercer servicio, `app`, empaqueta el propio proyecto para correrlo **dentro** de Docker (ver [`Dockerfile`](../Dockerfile)); no se usa en este flujo porque el punto 1 ya instaló las dependencias localmente con `pip`.
 
 **3. Verificar que el servidor está arriba**
 
@@ -841,7 +841,7 @@ python -m src.main --listar
 python3 -m src.main --listar
 ```
 
-Lista los 14 pedidos de [`data/dataset.json`](./data/dataset.json). Si el comando corre y muestra la tabla, el patrón RAG del ejercicio tiene contenido real que recuperar antes de invocar al modelo.
+Lista los 14 pedidos de [`data/dataset.json`](../data/dataset.json). Si el comando corre y muestra la tabla, el patrón RAG del ejercicio tiene contenido real que recuperar antes de invocar al modelo.
 
 ### 3.2. Ejecutar el prompt de solicitud de pedido (punto 1)
 
@@ -853,7 +853,7 @@ python -m src.main --tracking ECO-2024-0004 --modo basico    # solo el prompt b�
 python -m src.main --tracking ECO-2024-0004 --modo mejorado  # solo el prompt mejorado
 ```
 
-`--modo` acepta `basico`, `mejorado` o `ambos` (default). El básico envía únicamente la pregunta ([`PROMPT_BASICO`](./src/prompts.py)); el mejorado busca el pedido en la base de datos, arma el prompt con rol + few-shot + reglas, y devuelve el JSON estructurado documentado en el [punto 1.2](#12-prompt-mejorado) — ver un ejemplo de esta misma ejecución, con salida real, en el [punto 1.3](#13-comparación-y-ejemplos-de-ejecución).
+`--modo` acepta `basico`, `mejorado` o `ambos` (default). El básico envía únicamente la pregunta ([`PROMPT_BASICO`](../src/prompts.py)); el mejorado busca el pedido en la base de datos, arma el prompt con rol + few-shot + reglas, y devuelve el JSON estructurado documentado en el [punto 1.2](#12-prompt-mejorado) — ver un ejemplo de esta misma ejecución, con salida real, en el [punto 1.3](#13-comparación-y-ejemplos-de-ejecución).
 
 ### 3.3. Ejecutar el prompt de devolución (punto 2)
 
@@ -869,7 +869,7 @@ El detalle de flags, el significado de cada uno y ejemplos completos de entrada 
 
 ### 3.4. Variables de entorno
 
-Todas son opcionales: sin un `.env` propio, [`src/llm.py`](./src/llm.py) ya trae por defecto los valores de una Ollama local con `llama3.1:8b`. Solo se necesitan para apuntar a otro modelo o proveedor — copiar [`.env.example`](./.env.example) a `.env` (no se versiona) y ajustar:
+Todas son opcionales: sin un `.env` propio, [`src/llm.py`](../src/llm.py) ya trae por defecto los valores de una Ollama local con `llama3.1:8b`. Solo se necesitan para apuntar a otro modelo o proveedor — copiar [`.env.example`](../.env.example) a `.env` (no se versiona) y ajustar:
 
 | Variable | Default en el código | Uso |
 | :--- | :--- | :--- |
@@ -878,8 +878,8 @@ Todas son opcionales: sin un `.env` propio, [`src/llm.py`](./src/llm.py) ya trae
 | `LLM_MODEL` | `llama3.1:8b` | Modelo a invocar. **Debe coincidir con el que descargó `model-loader`** (paso 2). |
 | `LLM_TEMPERATURE` | `0.2` | Baja, para priorizar precisión sobre creatividad (ver [Fase 2](./fase_2_evaluacion.md#1-alucinaciones)). |
 
-> **Nota `LLM_MODEL`:** [`docker-compose.yml`](./docker-compose.yml) descarga `qwen2.5:3b` por defecto, mientras que el código de [`src/llm.py`](./src/llm.py) (y `.env.example`) usan `llama3.1:8b` como default de referencia. Si el modelo que pide el script no es el que `model-loader` efectivamente descargó, la llamada falla con un error de "modelo no encontrado". Para evitarlo, define `LLM_MODEL` en un mismo `.env` en la raíz del proyecto: Docker Compose lo usa para sustituir `${LLM_MODEL:-qwen2.5:3b}` al levantar `model-loader`, y `python-dotenv` lo carga automáticamente para los scripts locales — un solo archivo mantiene ambos lados sincronizados. (De hecho, la mención a "Alibaba Cloud" en la salida del punto 1.3 es evidencia de que ese entorno tenía `LLM_MODEL=qwen2.5:3b`, la familia de modelos de Alibaba.)
+> **Nota `LLM_MODEL`:** [`docker-compose.yml`](../docker-compose.yml) descarga `qwen2.5:3b` por defecto, mientras que el código de [`src/llm.py`](../src/llm.py) (y `.env.example`) usan `llama3.1:8b` como default de referencia. Si el modelo que pide el script no es el que `model-loader` efectivamente descargó, la llamada falla con un error de "modelo no encontrado". Para evitarlo, define `LLM_MODEL` en un mismo `.env` en la raíz del proyecto: Docker Compose lo usa para sustituir `${LLM_MODEL:-qwen2.5:3b}` al levantar `model-loader`, y `python-dotenv` lo carga automáticamente para los scripts locales — un solo archivo mantiene ambos lados sincronizados. (De hecho, la mención a "Alibaba Cloud" en la salida del punto 1.3 es evidencia de que ese entorno tenía `LLM_MODEL=qwen2.5:3b`, la familia de modelos de Alibaba.)
 
 ---
 
-Volver al [`README.md`](./README.md)
+Volver al [`README del Taller 1`](../README.md)

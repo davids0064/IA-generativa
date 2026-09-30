@@ -1,3 +1,9 @@
+# Fase 2 — Creación de la Base de Conocimiento
+
+📎 Navegación: [`README general`](../../README.md) · [`Taller 2`](../README.md) · [`Fase 1`](./fase_1_seleccion_componentes.md) · **Fase 2** · [`Fase 3`](./fase_3_integracion_rag.md)
+
+---
+
 ### Estrategia de Ingesta, Chunking e Indexación
 
 #### Documentos Identificados
@@ -14,3 +20,7 @@
 2. **Segmentación:** Creación de fragmentos lógicos mediante chunking recursivo o estructurado.
 3. **Vectorización:** Generación de embeddings densos mediante el modelo seleccionado.
 4. **Almacenamiento (Upsert):** Carga del vector, el texto de respaldo y los metadatos asociados en la base de datos vectorial seleccionada.
+
+---
+
+📎 Continuar con [`Fase 3 — Integración y Ejecución del Código`](./fase_3_integracion_rag.md)

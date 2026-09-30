@@ -1,3 +1,9 @@
+# Fase 3 — Integración y Ejecución del Código
+
+📎 Navegación: [`README general`](../../README.md) · [`Taller 2`](../README.md) · [`Fase 1`](./fase_1_seleccion_componentes.md) · [`Fase 2`](./fase_2_creacion_base_conocimiento.md) · **Fase 3**
+
+---
+
 ### Integración y Ejecución del Código (RAG con LangChain)
 
 Esta fase lleva a código la propuesta de las fases 1 y 2: el agente del Taller 1
@@ -78,4 +84,8 @@ producto y la categoría del pedido: sin ese ajuste, la sección 5 del manual qu
 en el puesto 8 del ranking y el modelo respondía con la garantía genérica de 30 días.
 
 Las limitaciones y suposiciones de esta implementación están documentadas en el
-[README](../README.md#limitaciones-y-suposiciones-del-taller-2).
+[README](../README.md#limitaciones-y-suposiciones).
+
+---
+
+Volver al [`README del Taller 2`](../README.md)

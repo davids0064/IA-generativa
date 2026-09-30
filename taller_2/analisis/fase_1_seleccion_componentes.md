@@ -1,3 +1,9 @@
+# Fase 1 — Selección de Componentes
+
+📎 Navegación: [`README general`](../../README.md) · [`Taller 2`](../README.md) · **Fase 1** · [`Fase 2`](./fase_2_creacion_base_conocimiento.md) · [`Fase 3`](./fase_3_integracion_rag.md)
+
+---
+
 ### 1. Modelo de Embeddings para la Vectorización de Documentos
 
 **Modelo seleccionado:** Código abierto (`bge-m3` de Hugging Face) / Propietario (`text-embedding-3-small` de OpenAI).
@@ -20,3 +26,7 @@
 
 #### Elección Final y Justificación:
 Se elige **[Pinecone / Weaviate]** para el entorno de producción debido a su capacidad de realizar búsquedas vectoriales eficientes combinadas con filtros por metadatos (cruciales para aislar información por usuario o categorías de productos) y su alta escalabilidad ante las miles de consultas diarias de EcoMarket.
+
+---
+
+📎 Continuar con [`Fase 2 — Creación de la Base de Conocimiento`](./fase_2_creacion_base_conocimiento.md)
