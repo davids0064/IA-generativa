@@ -33,7 +33,11 @@ services:
   # Aplicación del taller (CLI de consulta de pedidos).
   app:
     build: .
-    image: ecomarket-app
+    # Nombre propio por taller: con uno compartido, `compose run` reutilizaba la
+    # imagen del otro taller. `pull_policy: build` la reconstruye (con caché)
+    # antes de usarla, para que nunca quede desactualizada frente a uv.lock.
+    image: ecomarket-app-taller1
+    pull_policy: build
     container_name: ecomarket-app
     depends_on:
       model-loader:

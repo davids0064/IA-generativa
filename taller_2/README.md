@@ -49,7 +49,7 @@ taller_2/
 │   ├── rag.py                      # Retriever + cadena LangChain
 │   ├── prompts_rag.py              # Prompt del agente con RAG
 │   └── prompts_devolucion_rag.py   # Prompt de devoluciones con la política recuperada
-├── requirements.txt · .env.example
+├── pyproject.toml · uv.lock · .env.example
 └── Dockerfile · docker-compose.yml
 ```
 
@@ -61,6 +61,9 @@ Todos los comandos de este documento se ejecutan **desde la carpeta `taller_2/`*
 
 La base de conocimiento se carga **una sola vez** en un servidor de ChromaDB; los
 agentes (`main.py` y `main_devolucion.py`) solo se conectan a él para consultar.
+
+Requisitos: Docker (con Docker Compose) y [uv](https://docs.astral.sh/uv/getting-started/installation/) (`curl -LsSf https://astral.sh/uv/install.sh | sh` o `brew install uv`). uv usa Python 3.12 (fijado en
+`.python-version`) y lo descarga si el equipo no lo tiene.
 
 **1. Levantar la infraestructura y cargar la base vectorial (una sola vez)**
 
@@ -79,16 +82,16 @@ docker compose run --rm indexer                 # carga los 42 chunks en ChromaD
 
 Si cambian los documentos de `data/conocimiento/` **o el modelo de embeddings**
 (`EMBEDDINGS_MODEL`), se reconstruye con `docker compose run --rm indexer --reindexar`
-(o `python -m src.base_conocimiento --reindexar`): vectores de modelos distintos no son
+(o `uv run python -m src.base_conocimiento --reindexar`): vectores de modelos distintos no son
 comparables entre sí.
 
 **2. Ejecutar los agentes (tantas veces como se quiera, sin recargar)**
 
 ```bash
-pip install -r requirements.txt
-python -m src.main --modo rag --consulta "¿Puedo devolver un jabón que ya abrí?"
-python -m src.main --modo rag --tracking ECO-2024-0004 --consulta "¿Me devuelven el envío por el retraso?"
-python -m src.main_devolucion --modo rag --tracking ECO-2024-0008 --motivo producto_defectuoso
+uv sync                                         # entorno .venv con las versiones de uv.lock
+uv run python -m src.main --modo rag --consulta "¿Puedo devolver un jabón que ya abrí?"
+uv run python -m src.main --modo rag --tracking ECO-2024-0004 --consulta "¿Me devuelven el envío por el retraso?"
+uv run python -m src.main_devolucion --modo rag --tracking ECO-2024-0008 --motivo producto_defectuoso
 ```
 
 Si ChromaDB no está arriba o la colección está vacía, los agentes terminan con un
@@ -96,7 +99,7 @@ mensaje que indica el comando para resolverlo; nunca indexan por su cuenta.
 
 > **Sin Docker:** con Ollama instalado localmente (`ollama pull qwen2.5:3b && ollama pull bge-m3`)
 > y sin `CHROMA_HOST` en `.env`, ChromaDB funciona en modo embebido: se carga una vez con
-> `python -m src.base_conocimiento` y el índice queda en `data/vectorstore/`.
+> `uv run python -m src.base_conocimiento` y el índice queda en `data/vectorstore/`.
 
 La salida muestra el pedido asociado, los fragmentos recuperados con su fuente y la
 respuesta estructurada con las citas usadas (`sources_used`). Más comandos y los

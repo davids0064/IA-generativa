@@ -5,10 +5,10 @@ prompt de devoluciones por separado. Reutiliza el mismo cliente de Ollama
 (`src/llm.py`) y la misma base de datos simulada (`src/db.py`).
 
 Ejemplos de uso:
-    python -m src.main_devolucion --tracking ECO-2024-0008
-    python -m src.main_devolucion --tracking ECO-2024-0001 --motivo producto_danado
-    python -m src.main_devolucion --todos --motivo cambio_de_opinion
-    python -m src.main_devolucion --listar
+    uv run python -m src.main_devolucion --tracking ECO-2024-0008
+    uv run python -m src.main_devolucion --tracking ECO-2024-0001 --motivo producto_danado
+    uv run python -m src.main_devolucion --todos --motivo cambio_de_opinion
+    uv run python -m src.main_devolucion --listar
 """
 
 import argparse

@@ -21,9 +21,9 @@ define `CHROMA_HOST`; sin esa variable se usa en modo embebido, persistido en
 `VECTORSTORE_DIR`.
 
 Ejemplo de uso:
-    python -m src.base_conocimiento                 # carga si la colección está vacía
-    python -m src.base_conocimiento --reindexar     # reconstruye tras cambiar los documentos
-    python -m src.base_conocimiento --buscar "¿puedo devolver un jabón?"
+    uv run python -m src.base_conocimiento                 # carga si la colección está vacía
+    uv run python -m src.base_conocimiento --reindexar     # reconstruye tras cambiar los documentos
+    uv run python -m src.base_conocimiento --buscar "¿puedo devolver un jabón?"
 """
 
 import argparse
@@ -259,7 +259,7 @@ def verificar_indice() -> None:
     if vacia:
         raise SystemExit(
             f"La base de conocimiento en {destino()} está vacía. Cárgala una sola vez con:\n"
-            "  python -m src.base_conocimiento      (o: docker compose run --rm indexer)"
+            "  uv run python -m src.base_conocimiento      (o: docker compose run --rm indexer)"
         )
 
 

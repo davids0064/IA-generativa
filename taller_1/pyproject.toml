@@ -1,0 +1,14 @@
+[project]
+name = "ecomarket-taller-1"
+version = "1.0.0"
+description = "EcoMarket — agente de atención al cliente con ingeniería de prompts (Taller 1)"
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "openai>=1.40.0",
+    "python-dotenv>=1.0.0",
+]
+
+[tool.uv]
+# Aplicación de línea de comandos, no una librería: uv solo gestiona el entorno.
+package = false

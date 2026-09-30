@@ -13,7 +13,7 @@ de una base de conocimiento vectorial.
 #### Arquitectura implementada
 
 ```
- INDEXACIÓN — una sola vez (servicio indexer / python -m src.base_conocimiento)
+ INDEXACIÓN — una sola vez (servicio indexer / uv run python -m src.base_conocimiento)
 
  data/conocimiento/ ─► Extracción ─► Chunking ─► Embeddings bge-m3 ─► upsert ─┐
   (manual md/pdf,       (md, pdf,     (recursivo /   (Ollama)                  │
@@ -56,25 +56,25 @@ de una base de conocimiento vectorial.
 #### Ejecución
 
 ```bash
-pip install -r requirements.txt
+uv sync                                            # entorno .venv (pyproject.toml + uv.lock)
 docker compose up -d ollama model-loader chroma    # LLM, embeddings y servidor ChromaDB
 
 # Carga única de la base de conocimiento (42 chunks: 11 políticas, 18 catálogo, 13 FAQ).
 # Si la colección ya tiene documentos no vuelve a cargarla; --reindexar la reconstruye.
-docker compose run --rm indexer                     # o: python -m src.base_conocimiento
-python -m src.base_conocimiento --buscar "¿puedo devolver un jabón?"   # prueba del retriever, sin LLM
+docker compose run --rm indexer                     # o: uv run python -m src.base_conocimiento
+uv run python -m src.base_conocimiento --buscar "¿puedo devolver un jabón?"   # prueba del retriever, sin LLM
 
 # Preguntas abiertas, sin pedido
-python3 -m src.main --modo rag --consulta "¿Puedo devolver un jabón que ya abrí porque no me gustó el olor?"
-python3 -m src.main --modo rag --consulta "¿Venden bicicletas eléctricas?"
+uv run python -m src.main --modo rag --consulta "¿Puedo devolver un jabón que ya abrí porque no me gustó el olor?"
+uv run python -m src.main --modo rag --consulta "¿Venden bicicletas eléctricas?"
 
 # Preguntas sobre un pedido (el tracking se pasa con --tracking o se detecta en el texto)
-python3 -m src.main --modo rag --tracking ECO-2024-0004 --consulta "¿Me devuelven el costo del envío por el retraso?"
-python3 -m src.main --modo rag --consulta "Mi pedido ECO-2024-0008 dejó de funcionar a los 3 meses, ¿qué hago?"
+uv run python -m src.main --modo rag --tracking ECO-2024-0004 --consulta "¿Me devuelven el costo del envío por el retraso?"
+uv run python -m src.main --modo rag --consulta "Mi pedido ECO-2024-0008 dejó de funcionar a los 3 meses, ¿qué hago?"
 
 # Devoluciones con la política recuperada del manual
-python3 -m src.main_devolucion --modo rag --tracking ECO-2024-0008 --motivo producto_defectuoso
-python3 -m src.main_devolucion --modo rag --todos --motivo cambio_de_opinion   # barrido del dataset
+uv run python -m src.main_devolucion --modo rag --tracking ECO-2024-0008 --motivo producto_defectuoso
+uv run python -m src.main_devolucion --modo rag --todos --motivo cambio_de_opinion   # barrido del dataset
 
 # Con Docker (la app depende de indexer, que no recarga si la colección ya existe)
 docker compose run --rm app --modo rag --consulta "¿Cuánto cuesta el envío a Cali?"

@@ -4,10 +4,10 @@ Ejecuta el prompt básico y el mejorado sobre el mismo número de seguimiento
 para evidenciar el impacto de la ingeniería de prompts.
 
 Ejemplos de uso:
-    python -m src.main --tracking ECO-2024-0004
-    python -m src.main --tracking ECO-2024-0004 --modo basico
-    python -m src.main --tracking ECO-2024-0004 --modo mejorado
-    python -m src.main --listar
+    uv run python -m src.main --tracking ECO-2024-0004
+    uv run python -m src.main --tracking ECO-2024-0004 --modo basico
+    uv run python -m src.main --tracking ECO-2024-0004 --modo mejorado
+    uv run python -m src.main --listar
 """
 
 import argparse

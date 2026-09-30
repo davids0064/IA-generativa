@@ -1,0 +1,32 @@
+[project]
+name = "ecomarket-taller-2"
+version = "2.0.0"
+description = "EcoMarket — agente de atención al cliente con RAG (Taller 2)"
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "openai>=1.40.0",
+    "python-dotenv>=1.0.0",
+    # Taller 2 — sistema RAG con LangChain
+    "langchain-core>=1.0.0",
+    "langchain-text-splitters>=1.0.0",
+    "langchain-openai>=1.0.0",
+    "langchain-ollama>=1.0.0",
+    "langchain-chroma>=1.0.0",
+    "pypdf>=5.0.0",
+]
+
+[tool.uv]
+# Aplicación de línea de comandos, no una librería: uv solo gestiona el entorno.
+package = false
+# Plataformas que el lock debe soportar con paquetes precompilados (wheels):
+# macOS Intel y Apple Silicon, Linux (la imagen de Docker) y Windows. Sin esto,
+# uv elige la última versión de onnxruntime (dependencia de ChromaDB), que ya
+# no publica wheels para macOS Intel, y la instalación falla o se compila.
+required-environments = [
+    "sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    "sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "sys_platform == 'linux' and platform_machine == 'x86_64'",
+    "sys_platform == 'linux' and platform_machine == 'aarch64'",
+    "sys_platform == 'win32' and platform_machine == 'AMD64'",
+]

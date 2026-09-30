@@ -116,12 +116,12 @@ IA-generativa/
 │   ├── README.md      # Enunciado, fases, ejecución
 │   ├── analisis/      # fase_1_seleccion_modelo · fase_2_evaluacion · fase_3_prompts
 │   ├── src/ · data/
-│   └── requirements.txt · Dockerfile · docker-compose.yml · .env.example
+│   └── pyproject.toml · uv.lock · Dockerfile · docker-compose.yml · .env.example
 └── taller_2/          # v2 — RAG (incluye los modos de la v1)
     ├── README.md      # Fases, ejecución, limitaciones y suposiciones
     ├── analisis/      # fase_1_seleccion_componentes · fase_2_creacion_base_conocimiento · fase_3_integracion_rag
     ├── src/ · data/
-    └── requirements.txt · Dockerfile · docker-compose.yml · .env.example
+    └── pyproject.toml · uv.lock · Dockerfile · docker-compose.yml · .env.example
 ```
 
 Cada versión se ejecuta desde su propia carpeta (`cd taller_1` o `cd taller_2`) siguiendo

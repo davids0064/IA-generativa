@@ -300,7 +300,7 @@ def construir_mensajes(consulta: str, registro_json: str) -> list[dict]:
 Ejecución real contra el mismo pedido (`ECO-2024-0004`, estado `Retrasado`) con ambos modos del comando:
 
 ```bash
-python3 -m src.main --tracking ECO-2024-0004
+uv run python -m src.main --tracking ECO-2024-0004
 ```
 
 #### Prompt básico
@@ -615,7 +615,7 @@ def construir_mensajes_devolucion(
 
 ### 2.3. Ejemplos de ejecución
 
-> Este entorno no tiene un servidor de Ollama activo, así que estos casos **no son una llamada en vivo al LLM**. Los datos de entrada (`<contexto_temporal>` y `<datos_pedido>`) sí son reales: se generaron ejecutando las funciones `construir_contexto_temporal` / `db.buscar_pedido` de `main_devolucion.py` contra el [dataset](../data/dataset.json), usando el **8 de septiembre de 2026** como fecha de referencia. La salida JSON es la que produciría el modelo si sigue la política del punto 2.1 al pie de la letra (los campos de decisión —`elegible_devolucion`, `via`, `causa_rechazo`— son 100% determinísticos dado el árbol de decisión; `razonamiento` y `respuesta_cliente` son redacción ilustrativa). Para validarlo contra el modelo real: `python -m src.main_devolucion --tracking <ECO-AAAA-NNNN> --motivo <motivo>`.
+> Este entorno no tiene un servidor de Ollama activo, así que estos casos **no son una llamada en vivo al LLM**. Los datos de entrada (`<contexto_temporal>` y `<datos_pedido>`) sí son reales: se generaron ejecutando las funciones `construir_contexto_temporal` / `db.buscar_pedido` de `main_devolucion.py` contra el [dataset](../data/dataset.json), usando el **8 de septiembre de 2026** como fecha de referencia. La salida JSON es la que produciría el modelo si sigue la política del punto 2.1 al pie de la letra (los campos de decisión —`elegible_devolucion`, `via`, `causa_rechazo`— son 100% determinísticos dado el árbol de decisión; `razonamiento` y `respuesta_cliente` son redacción ilustrativa). Para validarlo contra el modelo real: `uv run python -m src.main_devolucion --tracking <ECO-AAAA-NNNN> --motivo <motivo>`.
 
 Los 4 casos siguientes complementan los 3 del few-shot, ejercitando las ramas que ese few-shot no cubre: retracto aceptado sobre un producto normal, garantía aceptada sobre un producto de higiene, ventana de retracto vencida y pedido aún no entregado.
 
@@ -799,23 +799,23 @@ Contexto recuperado de la base de datos:
 }
 ```
 
-> Solicitar devolucion de todos los pedudos (`python -m src.main_devolucion --todos --motivo <motivo>`) ejecuta la misma lógica contra los 14 pedidos del dataset, cubriendo automáticamente los 8 estados y ambas banderas (`is_perishable`, `is_hygiene_item`) — útil para detectar si el modelo real se desvía de la política en algún caso límite antes de llevarlo a producción.
+> Solicitar devolucion de todos los pedudos (`uv run python -m src.main_devolucion --todos --motivo <motivo>`) ejecuta la misma lógica contra los 14 pedidos del dataset, cubriendo automáticamente los 8 estados y ambas banderas (`is_perishable`, `is_hygiene_item`) — útil para detectar si el modelo real se desvía de la política en algún caso límite antes de llevarlo a producción.
 
 ---
 
 ## 3. Código ejecutable
 
-Requisitos: Python 3.12+ y Docker (con Docker Compose). El modelo se sirve en local vía [Ollama](https://ollama.com/), sin necesidad de una API de pago — ver la nota sobre modelo open-source en la [sección 3 del enunciado](../README.md#3-forma-de-entrega).
+Requisitos: [uv](https://docs.astral.sh/uv/getting-started/installation/) (`curl -LsSf https://astral.sh/uv/install.sh | sh` o `brew install uv`) y Docker (con Docker Compose). No hace falta instalar Python a mano: uv usa la versión fijada en `.python-version` (3.12) y la descarga si no está. El modelo se sirve en local vía [Ollama](https://ollama.com/), sin necesidad de una API de pago — ver la nota sobre modelo open-source en la [Fase 3 del enunciado](../README.md#fase-3--aplicación-de-la-ingeniería-de-prompts).
 
 ### 3.1. Preparar el entorno
 
 **1. Instalar las dependencias de Python**
 
 ```bash
-pip install -r requirements.txt
+uv sync
 ```
 
-Instala `openai>=1.40.0` (cliente HTTP compatible con OpenAI, que es la interfaz que expone Ollama — ver [`src/llm.py`](../src/llm.py)) y `python-dotenv>=1.0.0` (carga de variables desde `.env`).
+Crea el entorno `.venv` con las dependencias declaradas en [`pyproject.toml`](../pyproject.toml), en las versiones exactas de `uv.lock`: `openai` (cliente HTTP compatible con OpenAI, que es la interfaz que expone Ollama — ver [`src/llm.py`](../src/llm.py)) y `python-dotenv` (carga de variables desde `.env`). Los comandos siguientes usan `uv run`, que ejecuta dentro de ese entorno sin necesidad de activarlo.
 
 **2. Levantar Ollama con el modelo descargado, vía Docker Compose**
 
@@ -827,7 +827,7 @@ Esto trae dos de los tres servicios definidos en [`docker-compose.yml`](../docke
 - `ollama`: servidor de inferencia, expuesto en `localhost:11434`.
 - `model-loader`: servicio de un solo uso que espera a que `ollama` esté *healthy* y ejecuta `ollama pull` sobre `LLM_MODEL` (por defecto `qwen2.5:3b`), y termina al finalizar la descarga.
 
-> El tercer servicio, `app`, empaqueta el propio proyecto para correrlo **dentro** de Docker (ver [`Dockerfile`](../Dockerfile)); no se usa en este flujo porque el punto 1 ya instaló las dependencias localmente con `pip`.
+> El tercer servicio, `app`, empaqueta el propio proyecto para correrlo **dentro** de Docker (ver [`Dockerfile`](../Dockerfile)); no se usa en este flujo porque el punto 1 ya instaló las dependencias localmente con `uv`.
 
 **3. Verificar que el servidor está arriba**
 
@@ -836,9 +836,7 @@ Abrir [http://localhost:11434/](http://localhost:11434/) en el navegador. Debe r
 **4. Confirmar que hay datos contra los que validar los prompts**
 
 ```bash
-python -m src.main --listar
-# o, según cómo esté mapeado el binario de Python en el equipo:
-python3 -m src.main --listar
+uv run python -m src.main --listar
 ```
 
 Lista los 14 pedidos de [`data/dataset.json`](../data/dataset.json). Si el comando corre y muestra la tabla, el patrón RAG del ejercicio tiene contenido real que recuperar antes de invocar al modelo.
@@ -848,9 +846,9 @@ Lista los 14 pedidos de [`data/dataset.json`](../data/dataset.json). Si el coman
 **5.** Con Ollama arriba y el dataset confirmado, cualquiera de estos tres comandos prueba el ejercicio 1 contra el mismo pedido:
 
 ```bash
-python -m src.main --tracking ECO-2024-0004                  # ambos modos (básico + mejorado)
-python -m src.main --tracking ECO-2024-0004 --modo basico    # solo el prompt básico
-python -m src.main --tracking ECO-2024-0004 --modo mejorado  # solo el prompt mejorado
+uv run python -m src.main --tracking ECO-2024-0004                  # ambos modos (básico + mejorado)
+uv run python -m src.main --tracking ECO-2024-0004 --modo basico    # solo el prompt básico
+uv run python -m src.main --tracking ECO-2024-0004 --modo mejorado  # solo el prompt mejorado
 ```
 
 `--modo` acepta `basico`, `mejorado` o `ambos` (default). El básico envía únicamente la pregunta ([`PROMPT_BASICO`](../src/prompts.py)); el mejorado busca el pedido en la base de datos, arma el prompt con rol + few-shot + reglas, y devuelve el JSON estructurado documentado en el [punto 1.2](#12-prompt-mejorado) — ver un ejemplo de esta misma ejecución, con salida real, en el [punto 1.3](#13-comparación-y-ejemplos-de-ejecución).
@@ -860,25 +858,25 @@ python -m src.main --tracking ECO-2024-0004 --modo mejorado  # solo el prompt me
 Con el entorno ya levantado en los pasos 1 a 3, el ejercicio 2 se prueba igual, con el runner independiente `main_devolucion.py`:
 
 ```bash
-python -m src.main_devolucion --tracking ECO-2024-0008 --motivo cambio_de_opinion
-python -m src.main_devolucion --todos --motivo producto_danado
-python -m src.main_devolucion --listar
+uv run python -m src.main_devolucion --tracking ECO-2024-0008 --motivo cambio_de_opinion
+uv run python -m src.main_devolucion --todos --motivo producto_danado
+uv run python -m src.main_devolucion --listar
 ```
 
 El detalle de flags, el significado de cada uno y ejemplos completos de entrada → salida están en el [punto 2.3](#23-ejemplos-de-ejecución).
 
 ### 3.4. Variables de entorno
 
-Todas son opcionales: sin un `.env` propio, [`src/llm.py`](../src/llm.py) ya trae por defecto los valores de una Ollama local con `llama3.1:8b`. Solo se necesitan para apuntar a otro modelo o proveedor — copiar [`.env.example`](../.env.example) a `.env` (no se versiona) y ajustar:
+Todas son opcionales: sin un `.env` propio, [`src/llm.py`](../src/llm.py) ya trae por defecto los valores de una Ollama local con `qwen2.5:3b`, el mismo modelo que descarga `model-loader`. Solo se necesitan para apuntar a otro modelo o proveedor — copiar [`.env.example`](../.env.example) a `.env` (no se versiona) y ajustar:
 
 | Variable | Default en el código | Uso |
 | :--- | :--- | :--- |
 | `LLM_BASE_URL` | `http://localhost:11434/v1` | Endpoint compatible con la API de OpenAI. |
 | `LLM_API_KEY` | `ollama` | Ollama no valida la key; con un proveedor de pago (OpenAI, Groq…) va la key real. |
-| `LLM_MODEL` | `llama3.1:8b` | Modelo a invocar. **Debe coincidir con el que descargó `model-loader`** (paso 2). |
+| `LLM_MODEL` | `qwen2.5:3b` | Modelo a invocar. **Debe coincidir con el que descargó `model-loader`** (paso 2). |
 | `LLM_TEMPERATURE` | `0.2` | Baja, para priorizar precisión sobre creatividad (ver [Fase 2](./fase_2_evaluacion.md#1-alucinaciones)). |
 
-> **Nota `LLM_MODEL`:** [`docker-compose.yml`](../docker-compose.yml) descarga `qwen2.5:3b` por defecto, mientras que el código de [`src/llm.py`](../src/llm.py) (y `.env.example`) usan `llama3.1:8b` como default de referencia. Si el modelo que pide el script no es el que `model-loader` efectivamente descargó, la llamada falla con un error de "modelo no encontrado". Para evitarlo, define `LLM_MODEL` en un mismo `.env` en la raíz del proyecto: Docker Compose lo usa para sustituir `${LLM_MODEL:-qwen2.5:3b}` al levantar `model-loader`, y `python-dotenv` lo carga automáticamente para los scripts locales — un solo archivo mantiene ambos lados sincronizados. (De hecho, la mención a "Alibaba Cloud" en la salida del punto 1.3 es evidencia de que ese entorno tenía `LLM_MODEL=qwen2.5:3b`, la familia de modelos de Alibaba.)
+> **Nota `LLM_MODEL`:** el modelo que pide el script debe estar descargado en Ollama; si no, la llamada falla con `model '...' not found`. Para usar otro modelo, defínelo en `.env` (por ejemplo `LLM_MODEL=llama3.1:8b`): Docker Compose lo usa para sustituir `${LLM_MODEL:-qwen2.5:3b}` al levantar `model-loader`, y `python-dotenv` lo carga para los scripts locales, así que un solo archivo mantiene ambos lados sincronizados. Si Ollama ya estaba corriendo, descárgalo con `docker compose run --rm model-loader` u `ollama pull <modelo>`. (La mención a "Alibaba Cloud" en la salida del punto 1.3 es evidencia de que ese entorno usaba `qwen2.5:3b`, la familia de modelos de Alibaba.)
 
 ---
 

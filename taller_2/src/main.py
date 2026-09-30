@@ -7,16 +7,16 @@ prompts.
 Taller 2 (Fase 3): el modo `rag` añade la base de conocimiento (políticas,
 catálogo y FAQ) recuperada con LangChain + ChromaDB, de modo que el agente
 también responde preguntas abiertas que no están en el registro del pedido.
-El índice se carga una sola vez con `python -m src.base_conocimiento`; aquí
+El índice se carga una sola vez con `uv run python -m src.base_conocimiento`; aquí
 solo se consulta.
 
 Ejemplos de uso:
-    python -m src.main --tracking ECO-2024-0004
-    python -m src.main --tracking ECO-2024-0004 --modo basico
-    python -m src.main --tracking ECO-2024-0004 --modo mejorado
-    python -m src.main --listar
-    python -m src.main --modo rag --consulta "¿Puedo devolver un jabón que ya abrí?"
-    python -m src.main --modo rag --tracking ECO-2024-0004 --consulta "¿Me devuelven el envío por el retraso?"
+    uv run python -m src.main --tracking ECO-2024-0004
+    uv run python -m src.main --tracking ECO-2024-0004 --modo basico
+    uv run python -m src.main --tracking ECO-2024-0004 --modo mejorado
+    uv run python -m src.main --listar
+    uv run python -m src.main --modo rag --consulta "¿Puedo devolver un jabón que ya abrí?"
+    uv run python -m src.main --modo rag --tracking ECO-2024-0004 --consulta "¿Me devuelven el envío por el retraso?"
 """
 
 import argparse

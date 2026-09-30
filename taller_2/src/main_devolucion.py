@@ -7,15 +7,15 @@ prompt de devoluciones por separado. Reutiliza el mismo cliente de Ollama
 Taller 2 (Fase 3): el modo `rag` deja de escribir la política en el prompt y
 la recupera del manual indexado en ChromaDB (ver `rag.construir_cadena_devolucion`);
 la respuesta añade las citas usadas (`sources_used`). El índice se carga una
-sola vez con `python -m src.base_conocimiento`; aquí solo se consulta.
+sola vez con `uv run python -m src.base_conocimiento`; aquí solo se consulta.
 
 Ejemplos de uso:
-    python -m src.main_devolucion --tracking ECO-2024-0008
-    python -m src.main_devolucion --tracking ECO-2024-0001 --motivo producto_danado
-    python -m src.main_devolucion --todos --motivo cambio_de_opinion
-    python -m src.main_devolucion --listar
-    python -m src.main_devolucion --modo rag --tracking ECO-2024-0008 --motivo producto_defectuoso
-    python -m src.main_devolucion --modo rag --todos --motivo cambio_de_opinion
+    uv run python -m src.main_devolucion --tracking ECO-2024-0008
+    uv run python -m src.main_devolucion --tracking ECO-2024-0001 --motivo producto_danado
+    uv run python -m src.main_devolucion --todos --motivo cambio_de_opinion
+    uv run python -m src.main_devolucion --listar
+    uv run python -m src.main_devolucion --modo rag --tracking ECO-2024-0008 --motivo producto_defectuoso
+    uv run python -m src.main_devolucion --modo rag --todos --motivo cambio_de_opinion
 """
 
 import argparse
