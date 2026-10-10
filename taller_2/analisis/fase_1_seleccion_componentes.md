@@ -1,6 +1,6 @@
 # Fase 1 — Selección de Componentes
 
-📎 Navegación: [`README general`](../../README.md) · [`Taller 2`](../README.md) · **Fase 1** · [`Fase 2`](./fase_2_creacion_base_conocimiento.md) · [`Fase 3`](./fase_3_integracion_rag.md) · [`Pruebas`](./resultados_pruebas.md)
+Navegación: [`README general`](../../README.md) · [`Taller 2`](../README.md) · **Fase 1** · [`Fase 2`](./fase_2_creacion_base_conocimiento.md) · [`Fase 3`](./fase_3_integracion_rag.md) · [`Pruebas`](./resultados_pruebas.md)
 
 ---
 
@@ -182,4 +182,4 @@ retriever y los prompts no cambian.
 
 ---
 
-📎 Continuar con [`Fase 2 — Creación de la Base de Conocimiento`](./fase_2_creacion_base_conocimiento.md)
+Continuar con [`Fase 2 — Creación de la Base de Conocimiento`](./fase_2_creacion_base_conocimiento.md)
