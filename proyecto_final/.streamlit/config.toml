@@ -1,0 +1,29 @@
+[server]
+headless = true
+port = 8501
+
+[browser]
+gatherUsageStats = false
+
+[client]
+# Oculta el botón "Deploy" y deja solo el menú básico.
+toolbarMode = "minimal"
+
+# Paleta "eucalipto": fondo salvia frío, tinta verde bosque y un verde eucalipto como
+# color principal. El tono kraft de la etiqueta de devolución se define en src/app.py.
+[theme]
+base = "light"
+primaryColor = "#2D6A55"
+backgroundColor = "#F4F6F3"
+secondaryBackgroundColor = "#E6ECE7"
+textColor = "#17251F"
+linkColor = "#2D6A55"
+borderColor = "#CAD4CD"
+showWidgetBorder = true
+baseRadius = "0.55rem"
+font = "Instrument Sans:https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap"
+headingFontWeights = [650, 600, 600, 600, 600, 600]
+
+[theme.sidebar]
+backgroundColor = "#E9EEEA"
+secondaryBackgroundColor = "#FFFFFF"

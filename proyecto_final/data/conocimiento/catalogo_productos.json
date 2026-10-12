@@ -1,0 +1,240 @@
+[
+  {
+    "sku": "ECO-HIG-004",
+    "name": "Cepillo de dientes de bambú (pack x4)",
+    "category": "Higiene personal",
+    "price_cop": 24900,
+    "stock": 320,
+    "is_perishable": false,
+    "is_hygiene_item": true,
+    "certifications": [
+      "FSC"
+    ],
+    "description": "Mango de bambú Moso biodegradable y cerdas de nailon libre de BPA. Recomendado cambiarlo cada 3 meses. Empaque de cartón reciclado."
+  },
+  {
+    "sku": "ECO-HIG-032",
+    "name": "Kit de shampoo sólido + acondicionador sólido",
+    "category": "Higiene personal",
+    "price_cop": 58000,
+    "stock": 85,
+    "is_perishable": false,
+    "is_hygiene_item": true,
+    "certifications": [
+      "Vegano",
+      "Cruelty-free"
+    ],
+    "description": "Barras sólidas sin sulfatos ni siliconas, rinden hasta 80 lavados cada una. Aptas para cabello graso y mixto. Sin empaque plástico."
+  },
+  {
+    "sku": "ECO-HIG-052",
+    "name": "Jabón artesanal de avena (pack x6)",
+    "category": "Higiene personal",
+    "price_cop": 42000,
+    "stock": 140,
+    "is_perishable": false,
+    "is_hygiene_item": true,
+    "certifications": [
+      "Cruelty-free"
+    ],
+    "description": "Jabón de avena coloidal y aceite de coco elaborado en frío por una cooperativa de Boyacá. Ideal para piel sensible."
+  },
+  {
+    "sku": "ECO-HIG-060",
+    "name": "Copa menstrual de silicona médica",
+    "category": "Higiene personal",
+    "price_cop": 69000,
+    "stock": 60,
+    "is_perishable": false,
+    "is_hygiene_item": true,
+    "certifications": [
+      "Grado médico"
+    ],
+    "description": "Silicona de grado médico, reutilizable hasta 10 años. Disponible en talla S y L."
+  },
+  {
+    "sku": "ECO-HOG-011",
+    "name": "Bolsa reutilizable de algodón orgánico",
+    "category": "Hogar",
+    "price_cop": 15900,
+    "stock": 540,
+    "is_perishable": false,
+    "is_hygiene_item": false,
+    "certifications": [
+      "GOTS"
+    ],
+    "description": "Bolsa de algodón orgánico de 40x38 cm que soporta hasta 12 kg. Lavable en lavadora."
+  },
+  {
+    "sku": "ECO-HOG-021",
+    "name": "Botella térmica de acero inoxidable 750ml",
+    "category": "Hogar",
+    "price_cop": 79900,
+    "stock": 0,
+    "is_perishable": false,
+    "is_hygiene_item": false,
+    "certifications": [
+      "Libre de BPA"
+    ],
+    "description": "Doble pared al vacío: mantiene bebidas frías 24 horas y calientes 12 horas. Libre de BPA. Agotada temporalmente; reposición estimada para la segunda semana de octubre de 2026."
+  },
+  {
+    "sku": "ECO-HOG-045",
+    "name": "Set de utensilios de cocina de bambú",
+    "category": "Hogar",
+    "price_cop": 54900,
+    "stock": 110,
+    "is_perishable": false,
+    "is_hygiene_item": false,
+    "certifications": [
+      "FSC"
+    ],
+    "description": "Set de 6 piezas (espátulas, cucharas y pinza) en bambú tratado con aceite vegetal. No apto para lavavajillas."
+  },
+  {
+    "sku": "ECO-HOG-089",
+    "name": "Compostera doméstica 20L",
+    "category": "Hogar",
+    "price_cop": 189000,
+    "stock": 25,
+    "is_perishable": false,
+    "is_hygiene_item": false,
+    "certifications": [
+      "Plástico reciclado 100%"
+    ],
+    "description": "Compostera de plástico reciclado con filtro de carbón antiolor y grifo para lixiviado. Incluye guía de compostaje."
+  },
+  {
+    "sku": "ECO-HOG-105",
+    "name": "Filtro de agua con carbón activado",
+    "category": "Hogar",
+    "price_cop": 129000,
+    "stock": 40,
+    "is_perishable": false,
+    "is_hygiene_item": false,
+    "certifications": [
+      "NSF 42"
+    ],
+    "description": "Jarra filtrante de 2,5 L con cartucho de carbón activado de coco; cada cartucho dura 2 meses. Reduce cloro y sedimentos."
+  },
+  {
+    "sku": "ECO-HOG-130",
+    "name": "Envolturas de cera de abejas (pack x3)",
+    "category": "Hogar",
+    "price_cop": 36000,
+    "stock": 200,
+    "is_perishable": false,
+    "is_hygiene_item": false,
+    "certifications": [
+      "Orgánico"
+    ],
+    "description": "Alternativa al plástico para conservar alimentos. Tamaños S, M y L. Duran hasta un año con buen cuidado."
+  },
+  {
+    "sku": "ECO-TEC-063",
+    "name": "Bombillas LED bajo consumo (pack x10)",
+    "category": "Tecnología",
+    "price_cop": 89000,
+    "stock": 300,
+    "is_perishable": false,
+    "is_hygiene_item": false,
+    "certifications": [
+      "RETIE"
+    ],
+    "description": "Bombillas LED de 9 W equivalentes a 60 W, luz cálida, vida útil de 15.000 horas. Garantía del fabricante de 12 meses."
+  },
+  {
+    "sku": "ECO-TEC-078",
+    "name": "Panel solar portátil 60W",
+    "category": "Tecnología",
+    "price_cop": 459000,
+    "stock": 12,
+    "is_perishable": false,
+    "is_hygiene_item": false,
+    "certifications": [
+      "CE",
+      "IP65"
+    ],
+    "description": "Panel plegable monocristalino con salidas USB-A, USB-C y DC. Ideal para camping. Resistente a salpicaduras (IP65). Garantía del fabricante de 12 meses."
+  },
+  {
+    "sku": "ECO-TEC-081",
+    "name": "Cargador solar de bolsillo 10.000 mAh",
+    "category": "Tecnología",
+    "price_cop": 149000,
+    "stock": 0,
+    "is_perishable": false,
+    "is_hygiene_item": false,
+    "certifications": [
+      "CE"
+    ],
+    "description": "Batería externa con panel solar integrado y carcasa de plástico reciclado. Agotado; sin fecha de reposición confirmada."
+  },
+  {
+    "sku": "ECO-TEX-094",
+    "name": "Ropa deportiva reciclada — camiseta",
+    "category": "Textiles",
+    "price_cop": 69900,
+    "stock": 150,
+    "is_perishable": false,
+    "is_hygiene_item": false,
+    "certifications": [
+      "GRS"
+    ],
+    "description": "Camiseta técnica fabricada con 8 botellas PET recicladas. Tallas XS a XL. Secado rápido."
+  },
+  {
+    "sku": "ECO-TEX-121",
+    "name": "Juego de sábanas de algodón orgánico (queen)",
+    "category": "Textiles",
+    "price_cop": 249000,
+    "stock": 30,
+    "is_perishable": false,
+    "is_hygiene_item": false,
+    "certifications": [
+      "GOTS",
+      "OEKO-TEX"
+    ],
+    "description": "Juego de sábana ajustable, sábana plana y dos fundas en algodón orgánico de 300 hilos. Teñido con tintes de bajo impacto."
+  },
+  {
+    "sku": "ECO-ALI-112",
+    "name": "Suscripción mensual — caja de snacks orgánicos",
+    "category": "Suscripción",
+    "price_cop": 89000,
+    "stock": 999,
+    "is_perishable": true,
+    "is_hygiene_item": false,
+    "certifications": [
+      "Orgánico"
+    ],
+    "description": "Caja mensual con 10 a 12 snacks orgánicos de productores locales. Se despacha el día 5 de cada mes. Cancelable en cualquier momento."
+  },
+  {
+    "sku": "ECO-ALI-118",
+    "name": "Caja de frutas y verduras orgánicas (5 kg)",
+    "category": "Alimentos",
+    "price_cop": 65000,
+    "stock": 48,
+    "is_perishable": true,
+    "is_hygiene_item": false,
+    "certifications": [
+      "Orgánico"
+    ],
+    "description": "Selección semanal de frutas y verduras de temporada de fincas orgánicas de la Sabana de Bogotá. Solo se envía a ciudades principales."
+  },
+  {
+    "sku": "ECO-ALI-125",
+    "name": "Café especial orgánico 500 g",
+    "category": "Alimentos",
+    "price_cop": 42000,
+    "stock": 95,
+    "is_perishable": true,
+    "is_hygiene_item": false,
+    "certifications": [
+      "Orgánico",
+      "Comercio justo"
+    ],
+    "description": "Café de origen Huila, tostión media, en grano o molido. Bolsa compostable con válvula."
+  }
+]
