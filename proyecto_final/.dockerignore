@@ -1,0 +1,10 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+.git/
+.env
+*.md
+data/vectorstore/
+# El manual de políticas es Markdown y forma parte de la base de conocimiento.
+!data/conocimiento/*.md

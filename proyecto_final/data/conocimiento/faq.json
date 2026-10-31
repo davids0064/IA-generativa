@@ -1,0 +1,67 @@
+[
+  {
+    "category": "Pedidos",
+    "question": "¿Cómo rastreo mi pedido?",
+    "answer": "Ingresa a https://track.ecomarket.com/ seguido de tu número de seguimiento (formato ECO-AAAA-NNNN), o escríbenos el número por este chat y te damos el estado actualizado."
+  },
+  {
+    "category": "Pedidos",
+    "question": "¿Puedo cambiar la dirección de entrega?",
+    "answer": "Sí, mientras el pedido esté en estado Procesando. Una vez despachado, la transportadora no permite cambios de dirección; puedes coordinar con un asesor un nuevo intento de entrega."
+  },
+  {
+    "category": "Pedidos",
+    "question": "¿Qué hago si no recibí mi pedido pero aparece como entregado?",
+    "answer": "Revisa con porteros o vecinos y espera 24 horas. Si no aparece, escríbenos: un asesor abrirá un caso con la transportadora y, si se confirma la pérdida, te enviamos el producto de nuevo o te reembolsamos."
+  },
+  {
+    "category": "Envíos",
+    "question": "¿Cuánto cuesta el envío?",
+    "answer": "El envío es gratis en compras desde $150.000 COP. Por debajo de ese valor cuesta $12.000 COP en ciudades principales y $18.000 COP en el resto del país."
+  },
+  {
+    "category": "Envíos",
+    "question": "¿Hacen envíos internacionales?",
+    "answer": "Por ahora solo realizamos envíos dentro de Colombia."
+  },
+  {
+    "category": "Devoluciones",
+    "question": "¿Puedo devolver un producto que ya abrí?",
+    "answer": "Solo si llegó dañado, defectuoso o no corresponde a lo que pediste (garantía de 30 días). Por cambio de opinión, el producto debe estar sin uso y con el sello intacto, dentro de los 5 días hábiles siguientes a la entrega."
+  },
+  {
+    "category": "Devoluciones",
+    "question": "¿Por qué no puedo devolver productos de higiene o alimentos?",
+    "answer": "Por bioseguridad, los productos de higiene personal y los alimentos no admiten devolución por cambio de opinión. Si llegaron dañados o en mal estado sí los cubre la garantía: te reembolsamos o reponemos el producto con solo enviarnos una foto."
+  },
+  {
+    "category": "Devoluciones",
+    "question": "¿Cuánto tarda el reembolso?",
+    "answer": "Entre 5 y 10 días hábiles después de verificar el producto devuelto, por el mismo medio de pago que usaste en la compra."
+  },
+  {
+    "category": "Productos",
+    "question": "¿Los productos tienen certificaciones?",
+    "answer": "Sí. Cada ficha de producto indica sus certificaciones, por ejemplo GOTS y OEKO-TEX para textiles, FSC para bambú y madera, y sello orgánico para alimentos."
+  },
+  {
+    "category": "Productos",
+    "question": "¿Cómo sé si un producto está disponible?",
+    "answer": "El catálogo muestra el stock en tiempo real. Si un producto está agotado, puedes activar la alerta de reposición desde su ficha."
+  },
+  {
+    "category": "Suscripciones",
+    "question": "¿Cómo cancelo mi suscripción?",
+    "answer": "Desde tu cuenta, en Mis suscripciones, o pidiéndolo por este chat. La cancelación aplica a partir del siguiente ciclo; la caja ya despachada no es reembolsable salvo que llegue en mal estado."
+  },
+  {
+    "category": "Pagos",
+    "question": "¿Qué medios de pago aceptan?",
+    "answer": "Tarjetas de crédito y débito, PSE, Nequi, Daviplata y pago contra entrega en ciudades principales (con recargo de $5.000 COP)."
+  },
+  {
+    "category": "Sostenibilidad",
+    "question": "¿Cómo son los empaques de EcoMarket?",
+    "answer": "Usamos cartón reciclado, relleno de papel y cinta de papel. Los alimentos frescos viajan en empaque refrigerado compostable. Puedes devolvernos las cajas en tu siguiente entrega para reutilizarlas."
+  }
+]
