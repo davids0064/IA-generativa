@@ -200,6 +200,13 @@ Cada versión se ejecuta desde su propia carpeta (`cd taller_1`, `cd taller_2` o
 `cd proyecto_final`) siguiendo la sección de puesta en marcha de su README.
 
 ---
+## Ejemplo funcional de agente Ecomarket
+
+<img width="1520" height="1102" alt="image" src="https://github.com/user-attachments/assets/5861179c-c761-456a-9ee6-83021b634ff8" />
+
+<img width="1520" height="1102" alt="image" src="https://github.com/user-attachments/assets/d9900c6a-c2b7-4769-a2e4-d6eb6bafd4da" />
+
+
 
 ## Autores
 
