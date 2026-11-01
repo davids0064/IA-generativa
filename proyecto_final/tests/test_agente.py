@@ -194,4 +194,81 @@ def test_guarda_reconoce_anuncios_en_presente():
     texto = "Entiendo. Ahora, verifico si podemos devolverla."
     assert guardas.PATRON_ACCION_ANUNCIADA.search(texto)
     assert guardas.PATRON_ACCION_ANUNCIADA.search("Ya reviso tu pedido")
+    assert guardas.PATRON_ACCION_ANUNCIADA.search("Escalamos el caso a un asesor humano.")
     assert not guardas.PATRON_ACCION_ANUNCIADA.search("¿Quieres que verifique tu pedido?")
+    assert not guardas.PATRON_ACCION_ANUNCIADA.search("¿Quieres que verifiquemos tu pedido?")
+
+
+def test_guarda_distingue_escalamiento_afirmado_de_ofrecido():
+    assert guardas.afirma_escalamiento("Escalamos el caso a un asesor humano.")
+    assert guardas.afirma_escalamiento("Lo siento. Tu caso fue escalado a un asesor.")
+    assert guardas.afirma_escalamiento("Ya escalé tu caso, te contactarán pronto.")
+    assert not guardas.afirma_escalamiento("¿Quieres que escale tu caso a un asesor?")
+    assert not guardas.afirma_escalamiento("¿Escalamos tu caso a un asesor?")
+    assert not guardas.afirma_escalamiento("Si lo deseas, escalamos tu caso a un asesor.")
+    assert not guardas.afirma_escalamiento("Puedo comunicarte con un asesor si lo prefieres.")
+
+
+def test_guarda_escala_si_el_modelo_lo_promete_tras_la_falla_de_la_transportadora(monkeypatch):
+    monkeypatch.setenv("SIMULAR_FALLA_TRANSPORTADORA", "true")
+    guion = iter(_hasta_confirmacion() + [
+        # Turno 2: la etiqueta falla y el modelo promete un escalamiento sin ejecutarlo
+        # (caso 14 de la evaluación con qwen2.5:7b)...
+        _llamada("generar_etiqueta_devolucion", "t1", tracking_number="ECO-2024-0015",
+                 motivo="cambio_de_opinion", confirmado_por_cliente=True),
+        AIMessage("No pudimos programar la recolección. Escalamos el caso para que un asesor te ayude."),
+        # ...la guarda le devuelve el control y el modelo crea el ticket.
+        _llamada("escalar_a_humano", "t2", motivo="error_sistema",
+                 resumen="Falla de la transportadora al generar la etiqueta",
+                 tracking_number="ECO-2024-0015"),
+        AIMessage("Tu caso fue escalado: un asesor completará la devolución."),
+    ])
+    agente = AgenteDevoluciones(modelo="simulado", modelo_chat=ModeloSimulado(messages=guion))
+    agente.responder("Quiero devolver ECO-2024-0015, no me gustó", "hilo-g6")
+    respuesta = agente.responder("Sí, confirmo", "hilo-g6")
+    assert respuesta.herramientas == ["generar_etiqueta_devolucion", "escalar_a_humano"]
+    assert respuesta.pasos[0].resultado["error_code"] == "SERVICIO_TRANSPORTADORA_NO_DISPONIBLE"
+    assert respuesta.pasos[1].status == "SUCCESS"
+    # Con el ticket creado, la misma afirmación ya no activa la guarda.
+    assert respuesta.texto.startswith("Tu caso fue escalado")
+    motivos = [e.get("reason") for e in leer_eventos() if e["event"] == "guard_triggered"]
+    assert motivos == ["escalamiento_sin_ticket"]
+
+
+def test_guarda_reemplaza_escalamiento_sin_ticket_si_el_modelo_insiste():
+    # Caso 12 de la evaluación con qwen2.5:3b: promete el escalamiento sin crear el ticket.
+    guion = iter([
+        AIMessage("Escalamos el caso a un asesor humano."),
+        AIMessage("Tu caso ya fue escalado."),
+    ])
+    agente = AgenteDevoluciones(modelo="simulado", modelo_chat=ModeloSimulado(messages=guion))
+    respuesta = agente.responder("¡Quiero hablar con una persona! Pedido ECO-2024-0004", "hilo-g7")
+    assert respuesta.pasos == []
+    assert respuesta.texto == guardas.MENSAJE_SEGURO
+
+
+def test_guarda_no_entrega_la_respuesta_falsa_si_el_modelo_responde_vacio():
+    # Caso 12 de la segunda evaluación con qwen2.5:3b: tras la nota, el modelo devolvió un
+    # mensaje vacío y el cliente recibió la promesa de escalamiento conservada en el historial.
+    guion = iter([
+        AIMessage("Escalamos el caso a un asesor humano."),
+        AIMessage(""),
+    ])
+    agente = AgenteDevoluciones(modelo="simulado", modelo_chat=ModeloSimulado(messages=guion))
+    respuesta = agente.responder("¡Quiero hablar con una persona! Pedido ECO-2024-0004", "hilo-g9")
+    assert respuesta.texto == guardas.MENSAJE_SEGURO
+    motivos = [e.get("reason") for e in leer_eventos() if e["event"] == "guard_triggered"]
+    assert motivos == ["escalamiento_sin_ticket", "respuesta_vacia_tras_correccion"]
+
+
+def test_guarda_no_interviene_al_ofrecer_un_escalamiento():
+    guion = iter([
+        _llamada("verificar_elegibilidad_producto", "o1",
+                 tracking_number="ECO-2024-0001", motivo="cambio_de_opinion"),
+        AIMessage("Los productos de higiene no aplican al retracto. Si lo deseas, escalamos tu "
+                  "caso a un asesor. ¿Te ayudo con algo más?"),
+    ])
+    agente = AgenteDevoluciones(modelo="simulado", modelo_chat=ModeloSimulado(messages=guion))
+    respuesta = agente.responder("Quiero devolver el cepillo de ECO-2024-0001, me arrepentí", "hilo-g8")
+    assert respuesta.texto.startswith("Los productos de higiene")
+    assert not any(e["event"] == "guard_triggered" for e in leer_eventos())

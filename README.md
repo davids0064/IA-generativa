@@ -13,6 +13,7 @@ README de cada taller.
 | :---: | :--- | :--- | :--- |
 | **v1** | Taller Práctico #1 | Selección del modelo, análisis de riesgos e ingeniería de prompts | [`taller_1/README.md`](./taller_1/README.md) |
 | **v2** | Taller Práctico #2 | Sistema RAG: base de conocimiento vectorial con LangChain + ChromaDB | [`taller_2/README.md`](./taller_2/README.md) |
+| **v3** | Proyecto Final | Agente con herramientas que automatiza devoluciones, con guardas, auditoría e interfaz web | [`proyecto_final/README.md`](./proyecto_final/README.md) |
 
 ---
 
@@ -74,11 +75,28 @@ reentrenar cuando cambia el catálogo y escala con el volumen a bajo costo.
   reduce 4,7 veces el contexto que recibe el LLM.
   [Fase 2](./taller_2/analisis/fase_2_creacion_base_conocimiento.md)
 
+### 2.4. Del RAG a un agente que actúa ([Proyecto Final, Fases 1 y 3](./proyecto_final/README.md))
+
+- **RAG como herramienta:** el agente (LangChain `create_agent` sobre LangGraph) decide en
+  cada turno si consulta la base de conocimiento, el pedido o ejecuta una acción. Así resuelve
+  consultas mixtas ("¿puedo devolver X de mi pedido Y?") que el Taller 2 no cubría.
+  [Fase 1](./proyecto_final/analisis/fase_1_diseño_arquitectura.md)
+- **Las decisiones críticas no las toma el LLM:** la elegibilidad de una devolución se calcula
+  en Python (ventanas de retracto y garantía, exclusiones de higiene y perecederos), lo que
+  corrige el error de razonamiento observado en el Taller 2.
+- **LLM:** `qwen2.5:7b` en Ollama con temperatura 0, por su soporte de *tool calling* sin
+  costo por token; `gpt-4o-mini` por API como alternativa.
+- **Riesgos de un agente que actúa:** un error ya no es una respuesta incorrecta sino una
+  acción (una RMA, una recolección, un ticket). Las pruebas mostraron que el modelo anunciaba
+  acciones sin ejecutarlas e inventaba identificadores; la mitigación son guardas en código,
+  confirmación explícita del cliente y un registro de auditoría de cada paso.
+  [Fase 3](./proyecto_final/analisis/fase_3_analisis_critico.md)
+
 ---
 
 ## 3. Resultado de la solución
 
-La solución se construyó en dos versiones incrementales, ejecutables en local con modelos
+La solución se construyó en tres versiones incrementales, ejecutables en local con modelos
 open-source servidos por **Ollama** (sin costo por token).
 
 ```
@@ -87,6 +105,13 @@ consulta ─► db.buscar_pedido ─► prompt ─► LLM      consulta ─► d
             (dataset.json)      (rol, reglas,                  retriever ChromaDB ─────┤─► PROMPT_RAG ─► LLM ─► JSON
                                  few-shot, JSON)               (políticas, catálogo,   │   (grounding + citas)
                                                                 FAQ, filtro por SKU) ──┘
+
+                v3 — Proyecto Final
+consulta ─► guardas de entrada ─► agente (LLM con tool calling) ─► guarda de salida ─► respuesta
+                                    │  consultar_base_conocimiento (RAG v2)
+                                    │  consultar_pedido · verificar_elegibilidad_producto (reglas en código)
+                                    │  generar_etiqueta_devolucion (RMA + PDF) · escalar_a_humano (ticket)
+                                    └─► logs/auditoria.jsonl
 ```
 
 ### v1 — Ingeniería de prompts ([`taller_1/`](./taller_1/README.md))
@@ -112,13 +137,39 @@ consulta ─► db.buscar_pedido ─► prompt ─► LLM      consulta ─► d
   del modelo de 3B (confundió dos garantías con la regla correcta a la vista). El
   documento incluye las capturas, el resultado esperado de cada caso y las mejoras propuestas.
 
+### v3 — Agente de devoluciones ([`proyecto_final/`](./proyecto_final/README.md))
+
+- **Cinco herramientas:** consultar la base de conocimiento (el RAG de la v2), consultar un
+  pedido, verificar la elegibilidad, generar la etiqueta de devolución (RMA, guía de la
+  transportadora y PDF) y escalar a un asesor con un ticket.
+- **Guardas en código:** la etiqueta solo se genera si el cliente confirmó en la conversación;
+  la herramienta recalcula la elegibilidad (resiste *prompt injection*); repetir una devolución
+  devuelve la misma RMA; y un middleware impide que el modelo anuncie acciones que no ejecutó
+  o invente números de RMA o de ticket.
+- **Sistemas externos simulados** (pedidos, transportadora, mesa de ayuda) con fallas
+  controladas, y **auditoría** de cada llamada al LLM y a las herramientas en JSONL.
+- **Interfaz web en Streamlit** con la conversación, los pasos del agente, la descarga de la
+  etiqueta y el registro de acciones; también se ejecuta con Docker Compose.
+  [Fase 4](./proyecto_final/analisis/fase_4_despliegue.md)
+- **Pruebas** ([`resultados_pruebas_agente.md`](./proyecto_final/analisis/resultados_pruebas_agente.md)):
+  89 pruebas unitarias sin LLM, todas superadas, y una batería de 16 conversaciones con el LLM
+  real. Con `qwen2.5:7b` se resolvieron 13 de 16 casos y con `qwen2.5:3b`, 11; **ninguno de
+  los dos generó una etiqueta para un pedido no elegible**, ni siquiera ante *prompt injection*.
+  Los fallos se concentran en lo que se delega al modelo: no consultó la base de conocimiento
+  (respondió plazos inventados) y nunca generó la etiqueta por su cuenta; esa acción la completó
+  la guarda en código. La primera ejecución mostró además escalamientos prometidos sin ticket;
+  se corrigió la guarda y en la segunda ejecución ninguna respuesta los afirma.
+
 ### Limitaciones de la implementación
 
-La implementación se ejecutó en un portátil con `qwen2.5:3b` (4 bits) y un servidor ChromaDB en Docker, en
-lugar del LLM de mayor capacidad y la base vectorial gestionada que se proponen para
-producción. El modelo pequeño recupera bien, pero a veces mezcla plazos de políticas
-distintas. Detalle en
-[Limitaciones y suposiciones del Taller 2](./taller_2/README.md#limitaciones-y-suposiciones).
+La implementación se ejecutó en un portátil con `qwen2.5:3b` (4 bits) en el Taller 2 y
+`qwen2.5:7b` en el Proyecto Final, con un servidor ChromaDB en Docker, en lugar del LLM de
+mayor capacidad y la base vectorial gestionada que se proponen para producción. El modelo
+pequeño recupera bien, pero a veces mezcla plazos de políticas distintas; en el agente, la
+inferencia en CPU hace que un turno con herramientas tarde desde decenas de segundos hasta
+varios minutos. Detalle en
+[Limitaciones y suposiciones del Taller 2](./taller_2/README.md#limitaciones-y-suposiciones) y
+del [Proyecto Final](./proyecto_final/README.md#limitaciones-y-suposiciones).
 
 ---
 
@@ -132,15 +183,21 @@ IA-generativa/
 │   ├── analisis/      # fase_1_seleccion_modelo · fase_2_evaluacion · fase_3_prompts
 │   ├── src/ · data/
 │   └── pyproject.toml · uv.lock · Dockerfile · docker-compose.yml · .env.example
-└── taller_2/          # v2 — RAG (incluye los modos de la v1)
-    ├── README.md      # Fases, ejecución, limitaciones y suposiciones
-    ├── analisis/      # fase_1_seleccion_componentes · fase_2_creacion_base_conocimiento · fase_3_integracion_rag
-    ├── src/ · data/
+├── taller_2/          # v2 — RAG (incluye los modos de la v1)
+│   ├── README.md      # Fases, ejecución, limitaciones y suposiciones
+│   ├── analisis/      # fase_1_seleccion_componentes · fase_2_creacion_base_conocimiento · fase_3_integracion_rag
+│   ├── src/ · data/
+│   └── pyproject.toml · uv.lock · Dockerfile · docker-compose.yml · .env.example
+└── proyecto_final/    # v3 — agente con herramientas (incluye los modos de la v1 y la v2)
+    ├── README.md      # Puesta en marcha, interfaz web, guía de pruebas, limitaciones
+    ├── analisis/      # fase_1_diseño_arquitectura · fase_2_implementacion_agente · fase_3_analisis_critico
+    │                  # fase_4_despliegue · resultados_pruebas_agente · resultados/
+    ├── src/ · src/agente/ · tests/ · data/
     └── pyproject.toml · uv.lock · Dockerfile · docker-compose.yml · .env.example
 ```
 
-Cada versión se ejecuta desde su propia carpeta (`cd taller_1` o `cd taller_2`) siguiendo
-la sección de puesta en marcha de su README.
+Cada versión se ejecuta desde su propia carpeta (`cd taller_1`, `cd taller_2` o
+`cd proyecto_final`) siguiendo la sección de puesta en marcha de su README.
 
 ---
 

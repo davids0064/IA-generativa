@@ -8,7 +8,7 @@ la acción en lugar de ejecutarla ("Verificaremos si el producto es elegible",
 ("¡Listo! Tu RMA es RMA-7C7AECD233").
 
 Este middleware revisa cada respuesta final del modelo (`after_model`) y actúa
-en tres situaciones, en este orden:
+en cuatro situaciones, en este orden:
 
 1. **Confirmación sin etiqueta.** El cliente acaba de confirmar una devolución
    cuya elegibilidad ya se verificó y el modelo no generó la etiqueta. Todo lo
@@ -18,14 +18,22 @@ en tres situaciones, en este orden:
 2. **Identificador inventado.** El texto menciona un RMA-… o TCK-… que
    ninguna herramienta devolvió. Se borra el identificador del mensaje y se
    devuelve el control al modelo con una nota de corrección.
-3. **Acción anunciada sin ejecutar.** El texto anuncia que el agente va a
+3. **Escalamiento sin ticket.** El texto dice que el caso se escala o se
+   escaló ("Escalamos el caso a un asesor") y `escalar_a_humano` no se
+   ejecutó con éxito en la conversación. Se revisa aunque el turno haya usado
+   otras herramientas: en la evaluación, el modelo prometió el escalamiento
+   justo después de que la transportadora fallara al generar la etiqueta.
+4. **Acción anunciada sin ejecutar.** El texto anuncia que el agente va a
    verificar, consultar, generar o escalar, pero en el turno no se llamó a
    ninguna herramienta. Se devuelve el control al modelo con una nota.
 
-En los casos 2 y 3 la respuesta original se conserva en el historial: en las
+En los casos 2 a 4 la respuesta original se conserva en el historial: en las
 pruebas, el modelo corrige su conducta cuando ve lo que dijo junto a la nota,
 y no lo hace si la respuesta se elimina. Si tras una corrección el modelo
-vuelve a fallar, la respuesta se reemplaza por un mensaje seguro.
+vuelve a fallar con un identificador inventado o un escalamiento sin ticket,
+la respuesta se reemplaza por un mensaje seguro; una acción solo anunciada se
+entrega tal cual. Si tras la nota el modelo responde vacío, también se usa el
+mensaje seguro: de lo contrario el cliente vería la respuesta falsa conservada.
 """
 
 import re
@@ -39,17 +47,32 @@ from src.agente.herramientas import confirmacion_en_conversacion
 from src.agente.observabilidad import registrar
 
 PATRON_IDENTIFICADOR = re.compile(r"\b(?:RMA|TCK)-[A-Z0-9-]+\b", re.IGNORECASE)
-# Anuncios de una acción futura o en curso ("verificaremos", "voy a revisar", "te transfiero").
+# Anuncios de una acción futura, en curso o dada por hecha ("verificaremos", "voy a
+# revisar", "escalamos tu caso", "te transfiero"). El subjuntivo de una pregunta
+# ("¿quieres que verifiquemos?") no coincide.
 PATRON_ACCION_ANUNCIADA = re.compile(
     r"\b(?:verificar[eé](?:mos)?|revisar[eé](?:mos)?|consultar[eé](?:mos)?|"
     r"generar[eé](?:mos)?|escalar[eé](?:mos)?|crear[eé](?:mos)?|transferir[eé](?:mos)?|"
+    r"verificamos|revisamos|consultamos|generamos|escalamos|creamos|transferimos|"
     r"(?:vamos|voy) a (?:verificar|revisar|consultar|generar|escalar|crear|transferir)|"
     r"(?:estoy|estamos) (?:verificando|revisando|consultando|generando|escalando)|"
     r"(?:ahora|ya|enseguida|en seguida),? (?:verifico|reviso|consulto|genero|escalo|transfiero)|"
     r"te (?:transfiero|comunico con))\b",
     re.IGNORECASE,
 )
+# Afirmaciones de que el caso se escala o ya se escaló. Solo son ciertas si
+# escalar_a_humano creó el ticket. Los ofrecimientos se descartan en
+# `afirma_escalamiento`; el subjuntivo ("¿quieres que lo escale?") no coincide.
+PATRON_ESCALAMIENTO = re.compile(
+    r"\b(?:escalar[eé](?:mos)?|escalamos|escalé|"
+    r"(?:vamos|voy) a (?:escalar|transferir)|(?:estoy|estamos) (?:escalando|transfiriendo)|"
+    r"(?:he|hemos|ha|han) (?:escalado|transferido)|"
+    r"(?:fue|ha sido|será|queda|quedó) (?:escalado|transferido)|"
+    r"transferimos|transferiremos)\b",
+    re.IGNORECASE,
+)
 MARCA_CORRECCION = "[CORRECCIÓN AUTOMÁTICA]"
+IDENTIFICADOR_NO_VALIDO = "[identificador no válido]"
 MAX_CORRECCIONES = 1
 
 MENSAJE_SEGURO = (
@@ -66,6 +89,11 @@ NOTA_ACCION_ANUNCIADA = (
     "(verificar_elegibilidad_producto, consultar_pedido, consultar_base_conocimiento o "
     "escalar_a_humano). Si te falta un dato, pídeselo al cliente sin anunciar acciones."
 )
+NOTA_ESCALAMIENTO = (
+    "Le dijiste al cliente que su caso se escala a un asesor, pero no se ha creado ningún "
+    "ticket. Llama ahora a escalar_a_humano con el motivo y un resumen del caso, o no "
+    "afirmes que el caso fue escalado."
+)
 
 
 def _contenido(mensaje) -> str:
@@ -79,6 +107,35 @@ def identificadores_inventados(texto: str, mensajes: list) -> list[str]:
     """Identificadores del texto que no aparecen en ninguna salida de herramienta."""
     salidas = " ".join(_contenido(m) for m in mensajes if isinstance(m, ToolMessage)).upper()
     return [i for i in PATRON_IDENTIFICADOR.findall(texto) if i.upper() not in salidas]
+
+
+def afirma_escalamiento(texto: str) -> bool:
+    """Si alguna oración afirma el escalamiento; las preguntas y los condicionales
+    ("Si lo deseas, escalamos tu caso") son ofrecimientos, no afirmaciones."""
+    for oracion in re.split(r"(?<=[.!?\n])", texto):
+        oracion = oracion.strip()
+        if not PATRON_ESCALAMIENTO.search(oracion):
+            continue
+        if "¿" in oracion or oracion.endswith("?") or oracion.lower().startswith("si "):
+            continue
+        return True
+    return False
+
+
+def caso_escalado(mensajes: list) -> bool:
+    """Si escalar_a_humano creó un ticket en algún punto de la conversación."""
+    return any(
+        isinstance(m, ToolMessage)
+        and m.name == "escalar_a_humano"
+        and isinstance(m.artifact, dict)
+        and m.artifact.get("status") == "SUCCESS"
+        for m in mensajes
+    )
+
+
+def _respuesta_falsa(texto: str, mensajes: list) -> bool:
+    """Respuesta corregida por afirmar algo que no ocurrió (identificador o escalamiento)."""
+    return IDENTIFICADOR_NO_VALIDO in texto or (afirma_escalamiento(texto) and not caso_escalado(mensajes))
 
 
 def devolucion_confirmada_sin_etiqueta(mensajes: list, indice_humano: int) -> tuple[str, str] | None:
@@ -144,11 +201,24 @@ class GuardiaAccionesInventadas(AgentMiddleware):
                 "jump_to": "tools",
             }
 
-        # 2 y 3. Identificador inventado o acción anunciada sin herramientas en el turno.
+        # Respuesta vacía tras una corrección: el texto que vería el cliente sería la
+        # respuesta falsa que se conservó en el historial para que el modelo la corrigiera.
+        if not texto.strip():
+            anteriores = [m for m in turno if isinstance(m, AIMessage) and not m.tool_calls]
+            if any(_respuesta_falsa(_contenido(m), mensajes) for m in anteriores):
+                registrar("guard_triggered", reason="respuesta_vacia_tras_correccion")
+                return {"messages": [AIMessage(content=MENSAJE_SEGURO, id=ultimo.id)]}
+            return None
+
+        # 2 a 4. Identificador inventado, escalamiento sin ticket o acción anunciada
+        # sin herramientas en el turno.
         inventados = identificadores_inventados(texto, mensajes[:-1])
         sin_herramientas = not any(isinstance(m, ToolMessage) for m in turno)
+        escalamiento_falso = afirma_escalamiento(texto) and not caso_escalado(mensajes)
         if inventados:
             motivo_guarda, nota = "identificador_inventado", NOTA_IDENTIFICADOR
+        elif escalamiento_falso:
+            motivo_guarda, nota = "escalamiento_sin_ticket", NOTA_ESCALAMIENTO
         elif sin_herramientas and PATRON_ACCION_ANUNCIADA.search(texto):
             motivo_guarda, nota = "accion_anunciada_sin_ejecutar", NOTA_ACCION_ANUNCIADA
         else:
@@ -159,8 +229,8 @@ class GuardiaAccionesInventadas(AgentMiddleware):
         )
         registrar("guard_triggered", reason=motivo_guarda, corrections=correcciones)
         if correcciones >= MAX_CORRECCIONES:
-            if inventados:
-                # Mismo id: el reductor de mensajes reemplaza la respuesta inventada.
+            if inventados or escalamiento_falso:
+                # Mismo id: el reductor de mensajes reemplaza la respuesta falsa.
                 return {"messages": [AIMessage(content=MENSAJE_SEGURO, id=ultimo.id)]}
             return None  # una acción anunciada no es falsa: se entrega tras un intento de corrección
 
@@ -168,7 +238,7 @@ class GuardiaAccionesInventadas(AgentMiddleware):
         if inventados:
             # La respuesta queda en el historial sin el identificador falso, para no reutilizarlo.
             conservado = AIMessage(
-                content=PATRON_IDENTIFICADOR.sub("[identificador no válido]", texto), id=ultimo.id
+                content=PATRON_IDENTIFICADOR.sub(IDENTIFICADOR_NO_VALIDO, texto), id=ultimo.id
             )
         return {
             "messages": [conservado, SystemMessage(f"{MARCA_CORRECCION} {nota}")],

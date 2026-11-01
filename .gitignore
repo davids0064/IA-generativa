@@ -5,3 +5,9 @@ __pycache__/
 *.pyc
 .DS_Store
 **/data/vectorstore/
+
+# Proyecto Final: sistemas externos simulados y registro de auditoría generados al ejecutar
+proyecto_final/data/devoluciones.json
+proyecto_final/data/tickets.json
+proyecto_final/data/etiquetas/
+proyecto_final/logs/

@@ -45,7 +45,7 @@ proyecto_final/
 │   │   └── agente.py           # create_agent + middleware + memoria; responder()
 │   ├── main_agente.py          # Chat de consola con el agente
 │   └── evaluacion_agente.py    # Batería de conversaciones con el LLM real
-├── tests/                      # 83 pruebas unitarias (pytest, sin LLM)
+├── tests/                      # 89 pruebas unitarias (pytest, sin LLM)
 └── data/
     ├── dataset.json            # 16 pedidos (2 nuevos para cubrir todos los caminos)
     ├── conocimiento/           # Base de conocimiento del Taller 2
@@ -274,18 +274,25 @@ El modelo corrige su conducta cuando ve lo que dijo junto a la nota; si la respu
 la nota sola no basta.
 
 **Versión final.** `GuardiaAccionesInventadas` revisa cada respuesta final del modelo y actúa en
-tres situaciones:
+cuatro situaciones:
 
 | Situación | Detección | Acción |
 | :--- | :--- | :--- |
 | **Confirmación sin etiqueta** | La elegibilidad positiva de un pedido se verificó en un turno anterior, el último mensaje del cliente es una confirmación y en el turno no se llamó a `generar_etiqueta_devolucion`. | La guarda **ejecuta la acción de forma determinista**: sintetiza la llamada con el pedido y el motivo verificados y salta al nodo de herramientas (`jump_to="tools"`). El LLM solo redacta el resultado. Todas las guardas de la herramienta siguen aplicando. |
 | **Identificador inventado** | El texto menciona un `RMA-…` o `TCK-…` que ninguna herramienta devolvió. | Reemplaza el identificador por "[identificador no válido]" en el historial y devuelve el control al modelo con una nota (`jump_to="model"`). |
-| **Acción anunciada sin ejecutar** | El texto anuncia una acción ("verificaremos", "voy a revisar", "escalaremos", "te transfiero") y en el turno no se llamó a ninguna herramienta. | Conserva la respuesta y devuelve el control al modelo con una nota que indica llamar a la herramienta o pedir el dato faltante. |
+| **Escalamiento sin ticket** | El texto afirma que el caso se escala o se escaló ("escalamos el caso", "tu caso fue escalado") y `escalar_a_humano` no creó ningún ticket en la conversación. Se revisa aunque el turno haya usado otras herramientas; las preguntas y los ofrecimientos condicionales ("Si lo deseas, escalamos tu caso") no cuentan. | Conserva la respuesta y devuelve el control al modelo con una nota que indica llamar a `escalar_a_humano` o no afirmar el escalamiento. |
+| **Acción anunciada sin ejecutar** | El texto anuncia una acción ("verificaremos", "voy a revisar", "verificamos", "te transfiero") y en el turno no se llamó a ninguna herramienta. | Conserva la respuesta y devuelve el control al modelo con una nota que indica llamar a la herramienta o pedir el dato faltante. |
 
-Se permite una sola corrección por turno. Si el modelo vuelve a inventar un identificador, la
-respuesta se reemplaza por un mensaje seguro que ofrece reintentar o hablar con un asesor; una
-acción anunciada sin identificador falso se entrega tras el intento de corrección. Cada
-activación queda registrada como `guard_triggered` con su motivo.
+Se permite una sola corrección por turno. Si el modelo vuelve a inventar un identificador o a
+afirmar un escalamiento sin ticket, la respuesta se reemplaza por un mensaje seguro que ofrece
+reintentar o hablar con un asesor (también si tras la nota responde vacío, para que el cliente no reciba la respuesta falsa conservada en el historial); una acción solo anunciada se entrega tras el intento de
+corrección. Cada activación queda registrada como `guard_triggered` con su motivo.
+
+La regla de **escalamiento sin ticket** se agregó tras la evaluación descrita en
+[`resultados_pruebas_agente.md`](./resultados_pruebas_agente.md): los dos modelos prometieron al
+cliente un escalamiento que no ocurrió, una vez porque el patrón no reconocía "escalamos" y otra
+porque la promesa llegó en un turno que ya había usado otra herramienta (la etiqueta que falló
+por la transportadora).
 
 La ejecución directa del primer caso no le quita la decisión al cliente ni al código de negocio:
 solo ocurre cuando la elegibilidad ya fue verificada y el cliente confirmó de forma explícita,
@@ -322,17 +329,17 @@ desarrolla en la Fase 3.
 
 La evaluación tiene dos niveles.
 
-### 8.1. Pruebas unitarias sin LLM (83 pruebas)
+### 8.1. Pruebas unitarias sin LLM (89 pruebas)
 
 ```bash
-uv run pytest -q        # 83 passed
+uv run pytest -q        # 89 passed
 ```
 
 | Archivo | Pruebas | Qué cubre |
 | :--- | :---: | :--- |
 | `tests/test_reglas.py` | 39 | Veredicto de 28 combinaciones pedido × motivo del dataset, límites exactos de cada ventana (5 días hábiles, 30 días calendario, 360 días del fabricante), suscripciones, datos inconsistentes y casos que escalan. |
 | `tests/test_herramientas.py` | 33 | Convención de salida, cada código de error, normalización del número de seguimiento, privacidad de `consultar_pedido`, confirmación verificada (respuestas afirmativas y negativas, confirmación inventada en el mismo turno), recálculo de elegibilidad, idempotencia, PDF generado, falla de la transportadora sin persistencia, argumentos fuera del esquema, ChromaDB caído y enmascaramiento de PII. |
-| `tests/test_agente.py` | 11 | Cableado completo con un modelo de guion fijo: flujo de devolución en dos turnos con memoria, bloqueo de etiqueta sin confirmación, respuesta directa, LLM caído, guardas de entrada, límite de llamadas, guarda de salida (ejecuta la etiqueta tras una confirmación ignorada, corrige una acción anunciada, reemplaza un identificador inventado si el modelo insiste y no interviene al pedir un dato ni con identificadores reales) y ausencia de PII en la auditoría. |
+| `tests/test_agente.py` | 17 | Cableado completo con un modelo de guion fijo: flujo de devolución en dos turnos con memoria, bloqueo de etiqueta sin confirmación, respuesta directa, LLM caído, guardas de entrada, límite de llamadas, guarda de salida (ejecuta la etiqueta tras una confirmación ignorada, corrige una acción anunciada, reemplaza un identificador inventado si el modelo insiste y no interviene al pedir un dato ni con identificadores reales), detección de acciones anunciadas en presente ("verifico", "ya reviso"), escalamiento sin ticket (tras la falla de la transportadora, cuando el modelo insiste y cuando responde vacío tras la corrección), distinción entre escalamiento afirmado y ofrecido, y ausencia de PII en la auditoría. |
 
 ### 8.2. Batería de conversaciones con el LLM real
 

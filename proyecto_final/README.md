@@ -362,7 +362,7 @@ grep guard_triggered logs/auditoria.jsonl
 ### 8. Pruebas automáticas
 
 ```bash
-# 83 pruebas unitarias, sin LLM (~15 s): reglas, herramientas, guardas y cableado del agente
+# 89 pruebas unitarias, sin LLM (~15 s): reglas, herramientas, guardas y cableado del agente
 uv run pytest -q
 uv run pytest tests/test_reglas.py -v      # solo las reglas de elegibilidad
 
