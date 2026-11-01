@@ -13,7 +13,7 @@ README de cada taller.
 | :---: | :--- | :--- | :--- |
 | **v1** | Taller Práctico #1 | Selección del modelo, análisis de riesgos e ingeniería de prompts | [`taller_1/README.md`](./taller_1/README.md) |
 | **v2** | Taller Práctico #2 | Sistema RAG: base de conocimiento vectorial con LangChain + ChromaDB | [`taller_2/README.md`](./taller_2/README.md) |
-| **v3** | Proyecto Final | Agente con herramientas que automatiza devoluciones, con guardas, auditoría e interfaz web | [`proyecto_final/README.md`](./proyecto_final/README.md) |
+| **v3** | Proyecto Final | Agente con herramientas que automatiza devoluciones, con guardas, auditoría e interfaz web ([Ver video](https://www.youtube.com/watch?v=dr__VBjlK5I)) | [`proyecto_final/README.md`](./proyecto_final/README.md) |
 
 ---
 
